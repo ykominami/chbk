@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
+
+require 'arxutils'
+
+db_def_ary = [
+  {
+    :flist => %W!noitem!,
+    :classname => "Countdatetime",
+    :classname_downcase => "countdatetime",
+    :items => [
+              ["countdatetime" , "datetime", "false"],
+            ],
+    :plural => "countdatetimes"
+  },
+
+  {
+    :flist => %W!base!,
+    :classname => "Bm",
+    :classname_downcase => "bm",
+
+    :items => [
+              ["count_id" , "integer", "false"],
+              ["category_id" , "integer", "false"],
+              ["name" , "string", "false"],
+              ["url" , "string", "false"],
+             ],
+    :plural => "unreadfeeds"
+  },
+
+  {
+    :flist => %W!base!,
+    :classname => "Category",
+    :classname_downcase => "category",
+
+    :items => [
+              ["count_id" , "integer", "false"],
+              ["name" , "string", "false"],
+             ],
+    :plural => "unreadfeeds"
+  },
+
+  {
+    :flist => %W!base invalid current!,
+    :classname => "Ennblist",
+    :classname_downcase => "ennblist",
+
+    :items => [
+              ["stack" , "string", "false"],
+              ["notebook" , "string", "false"],
+              ["count" , "integer", "false"],
+              ["tag_count" , "integer", "false"],
+             ],
+    :plural => "ennblists"
+  },
+]
+
+dbconfig = Arxutils::Dbutil::DBCONFIG_MYSQL
+dbconfig = Arxutils::Dbutil::DBCONFIG_SQLITE3
+
+forced = true
+Arxutils::Migrate.migrate(
+                          db_def_ary,
+                          0,
+                          dbconfig,
+                          forced
+                          )
+

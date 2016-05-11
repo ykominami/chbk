@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+# Specify your gem's dependencies in chbk.gemspec
+gemspec
+
+gem 'arxutils'
+

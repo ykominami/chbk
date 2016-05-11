@@ -1,0 +1,185 @@
+# -*- coding: utf-8 -*-
+require 'active_record'
+require 'forwardable'
+require 'pp'
+
+module Chbk
+  module Dbutil
+    class Count < ActiveRecord::Base
+      has_and_belongs_to_many :bookmarks
+      has_and_belongs_to_many :categories
+      has_and_belongs_to_many :currentbookmarks
+      has_and_belongs_to_many :currentcategories
+      has_many :invalidbookmarks
+      has_many :invalidcategories
+    end
+
+    class Bookmark < ActiveRecord::Base
+      has_and_belongs_to_many :Counts
+      belongs_to :categories , foreign_key: 'category_id'
+      belongs_to :counts , foreign_key: 'count_id'      
+    end
+
+    class Invalidbookmark < ActiveRecord::Base
+      belongs_to :bookmarks , foreign_key: 'org_id'      
+      belongs_to :counts , foreign_key: 'count_id'      
+    end
+
+    class Currentbookmark < ActiveRecord::Base
+      has_and_belongs_to_many :Counts
+      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :bookmarks , foreign_key: 'org_id'
+    end
+
+    class Bookmarkcount < ActiveRecord::Base
+      has_many :count_id
+      has_many :bookmark_id
+    end
+
+    class Category < ActiveRecord::Base
+      has_and_belongs_to_many :Counts
+      has_many :bookmarks
+    end
+    
+    class Categorycount < ActiveRecord::Base
+      has_many :count_id
+      has_many :category_id
+    end
+    
+    class Invalidcategory < ActiveRecord::Base
+      belongs_to :categories , foreign_key: 'org_id'      
+      belongs_to :counts , foreign_key: 'count_id'      
+    end
+
+    class Currentcategory < ActiveRecord::Base
+      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :categories , foreign_key: 'org_id'
+    end
+
+    class Management < ActiveRecord::Base
+    end
+
+    class ChbkMgr
+      extend Forwardable
+      
+      def initialize(register_time)
+        @register_time = register_time
+        @count = Count.create( countdatetime: @register_time )
+        it = nil
+        begin
+          it = @management = Management.find(1)
+        rescue
+        end
+        @management = Management.create( add_date: 0 , last_modified: 0 ) unless it
+        @latest_add_date = @management.add_date
+        @latest_last_modified = @management.last_modified
+        @category_hs = {}
+        @bookmakr_hs = {}
+        @bookmark_by_categoryname = {}
+        @bookmark_hs = {}
+      end
+
+      def update_integer( model , hs )
+        value_hs = hs.reduce({}){ |hsx,item|
+          val = model.send(item[0])
+          if val != nil and item[1] != nil and val  < item[1]
+            hsx[ item[0] ] = item[1]
+          end
+          hsx
+        }
+        model.update(value_hs) if value_hs.size > 0
+      end
+      
+      def add_category( category_name , add_date = nil, last_modified = nil )
+        hs = { add_date: add_date, last_modified: last_modified }.select{ |x| x[1] != nil }
+        
+        if (category = @category_hs[category_name] ) != nil
+          category_id = category.id
+          update_integer( category , hs ) if hs.size > 0
+        else
+          cur_category = Currentcategory.where( name: category_name ).limit(1)
+          if cur_category.size == 0
+            begin
+              category = Category.create( name: category_name , add_date: add_date, last_modified: last_modified )
+              @category_hs[category_name] = category
+              category_id = category.id
+            rescue => ex
+              p ex.class
+              p ex.message
+              pp ex.backtrace
+
+              category = nil
+              categorycount = nil
+            end
+          else
+            cur_category = cur_category.first
+            category_id = cur_category['org_id']
+            category = Category.find( category_id )
+            update_integer( category , hs ) if hs.size > 0
+          end
+        end
+        category_id
+      end
+
+      def get_add_date_from_management
+        Management.find(1).add_date
+      end
+
+      def get_last_modified_from_management
+        Management.find(1).last_modified
+      end
+      
+      def category_add( category_name , add_date , last_modified )
+        puts category_name if last_modified != nil
+        add_category( category_name , add_date , last_modified )
+      end
+      
+      def add( category_name , name , url , add_date = nil , last_modified = nil )
+        category_id = add_category( category_name )
+        @bookmark_hs[category_id] ||= {}
+        
+        hs = {:category_id => category_id, :name => name, :url => url , add_date: add_date, last_modified: last_modified }
+        if ( bookmark = @bookmark_hs[category_id][url] )
+            update_integer( bookmark , hs )
+        else
+          cur_bookmark = Currentbookmark.where( category_id: category_id , url: url ).limit(1)
+          if cur_bookmark.size == 0
+            begin
+              bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date, last_modified: last_modified )
+              @bookmark_hs[category_id][name] = bookmark
+            rescue => ex
+              p ex.class
+              p ex.message
+              pp ex.backtrace
+
+              bookmark = nil
+              bookmarkcount = nil
+            end
+          else
+            bookmark = cur_bookmark.first
+            update_integer( bookmark , hs )
+          end
+        end
+        
+        if bookmark
+          @bookmark_hs[category_id][url] = bookmark
+        end
+        bookmark
+      end
+      
+      def post_process( dir_id )
+        h_ids = Currentbookmark.pluck(:org_id)
+        @bookmark_hs.keys.map{|k|
+          t_ids = @bookmark_hs[k].keys
+          ids = h_ids - t_ids
+          if ids.size > 0
+            ids.each do |idx| 
+              Invalidbookmark.create( org_id: idx , count_id: @count.id )
+            end
+          end
+        }
+      end
+    end
+  end
+end
+
