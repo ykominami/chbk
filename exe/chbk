@@ -27,8 +27,12 @@ chbk = Chbk::Chbk.new(
                       )
 #chbk.connect
 
-def category_op(chbk, category_pn)
+def init(chbk , category_pn, pn )
   chbk.load_category_file( category_pn )
+  chbk.load_bookmark_file( pn )
+end
+
+def category_op(chbk, category_pn)
 #  count = chbk.category_count
 #  chbk.list_category
 #  puts count
@@ -36,22 +40,25 @@ def category_op(chbk, category_pn)
 #  category = chbk.get_latest_category
 #puts category.add_date
 #  p category
-#  chbk.list_category
+  chbk.list_category
 #  puts chbk.max_add_date
 end
 
 def bookmark_op(chbk, pn)
-  chbk.load_bookmark_file( pn )
-  chbk.pickup_multiple_bookmarks
-=begin
+#  chbk.pickup_multiple_bookmarks_by_add_date
+#  chbk.pickup_multiple_bookmarks_by_url
   bminfo = chbk.get_latest_bookmark
-  p bminfo
   chbk.list_bookmark
-  puts chbk.max_add_date
-=end
 end
 
+init(chbk, category_pn , pn )
 bookmark_op(chbk, pn)
 category_op(chbk, category_pn)
-
-
+#chbk.pickup_multiple_bookmarks_between_gitmarks_and_other
+=begin
+chbk.pickup_not_sutable_bookmarks_for_folder.map{|x|
+  puts [x.category , x.name, x.url].join("|")
+}
+=end
+chbk.ensure_invalid
+chbk.ensure_management

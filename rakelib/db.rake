@@ -17,17 +17,6 @@ task :migrate do
     },
 
     {
-      :flist => %W!noitem!,
-      :classname => "Bookmarkcount",
-      :classname_downcase => "bookmarkcount",
-      :items => [
-        ["count_id" , "integer", "false"],
-        ["bookmark_id" , "integer", "false"],
-      ],
-      :plural => "bookmarks_counts"
-    },
-
-    {
       :flist => %W!base invalid current!,
       :classname => "Bookmark",
       :classname_downcase => "bookmark",
@@ -37,21 +26,8 @@ task :migrate do
         ["name" , "string", "true"],
         ["url" , "string", "false"],
         ["add_date" , "int", "true"],
-        ["last_modified" , "int", "true"],
       ],
       :plural => "bookmarks"
-    },
-
-    {
-      :flist => %W!noitem!,
-      :classname => "Categorycount",
-      :classname_downcase => "categorycount",
-
-      :items => [
-        ["count_id" , "integer", "false"],
-        ["category_id" , "integer", "false"],
-      ],
-      :plural => "categories_counts"
     },
 
     {
