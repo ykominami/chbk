@@ -37,7 +37,7 @@ module Chbk
       @bminfos_by_category = {}
 
 
-      @bookmarkinfo = Struct.new("BookmarkInfo", :category, :name, :url , :add_date, :last_modified)
+      @bookmarkinfo = Struct.new("BookmarkInfo", :category, :name, :url , :add_date)
       @categoryinfo = Struct.new("CategoryInfo", :name, :add_date, :last_modified)
 
       @dbmgr = Arxutils::Store.init( kind , hs ){ | register_time |
@@ -71,9 +71,9 @@ module Chbk
     end
       
     def get_record_from_tsv(line)
-      category, name, url, add_date, last_modified, tmp_ignore = line.chomp.split("\t")
-      add_date, last_modified = normalize_to_integer( add_date, last_modified )
-      [category, name, url, add_date, last_modified]
+      category, name, url, add_date, tmp_ignore = line.chomp.split("\t")
+      add_date , tmp_ignore = normalize_to_integer( add_date )
+      [category, name, url, add_date]
     end
     
     def get_category_record_from_tsv(line)
@@ -96,18 +96,31 @@ module Chbk
         array.shift(@ignore_lines)
         count = 0
         @bminfo_array = array.map{ |line|
-          it = @bookmarkinfo.new( *get_record_from_tsv(line))
+          begin
+            ary = get_record_from_tsv(line)
+            it = @bookmarkinfo.new( *ary )
+          rescue => ex
+            puts ex.message
+            puts ary
+            p @bookmarkinfo
+            exit
+          end
           if it
-            @bminfos_by_add_date[it.add_date] ||= []
-            @bminfos_by_add_date[it.add_date] << it
+            if it.add_date != nil 
+              @bminfos_by_add_date[it.add_date] ||= []
+              @bminfos_by_add_date[it.add_date] << it
             
-            @bminfos_by_url[it.url] ||= []
-            @bminfos_by_url[it.url] << it
+              @bminfos_by_url[it.url] ||= []
+              @bminfos_by_url[it.url] << it
             
-            @bminfos_by_category[it.category] ||= []
-            @bminfos_by_category[it.category] << it
+              @bminfos_by_category[it.category] ||= []
+              @bminfos_by_category[it.category] << it
 
-            update_add_date_if_new( it.add_date )
+              update_add_date_if_new( it.add_date )
+            else
+              puts "add_date=nil #{it.name}"
+              it = nil
+            end
           end
           it
         }.select{ |x|
@@ -124,8 +137,7 @@ module Chbk
           it = @categoryinfo.new( *get_category_record_from_tsv(line) )
           update_add_date_if_new( it.add_date )
           update_last_modified_if_new( it.last_modified )
-
-          it
+          (it.name == nil or it.add_date == nil ) ? nil : it
         }.select{ |x|
           x != nil
         }
@@ -135,7 +147,7 @@ module Chbk
     def list_bookmark
       get_all_bm
       @bminfo_array.map{|bookmarkinfo|
-        db_add(  bookmarkinfo.category , bookmarkinfo.name , bookmarkinfo.url , bookmarkinfo.add_date , bookmarkinfo.last_modified )
+        db_add(  bookmarkinfo.category , bookmarkinfo.name , bookmarkinfo.url , bookmarkinfo.add_date )
       }
     end
 
@@ -177,7 +189,6 @@ module Chbk
 
     def pickup_not_sutable_bookmarks_for_folder
       ensure_all_bm_and_all_category
-      puts "In pickup_not_sutable_bookmarks_for_folder"
       @bminfos_by_category.keys.select{|x|
         x =~ /Gitmarks/
       }.map{|category_name|
@@ -189,7 +200,6 @@ module Chbk
     
     def pickup_multiple_bookmarks_between_gitmarks_and_other
       ensure_all_bm_and_all_category
-      puts "In pickup_multiple_bookmarks_between_gitmarks_and_other"
       categoryes = @bminfos_by_category.keys.select{|x|
         x =~ /Gitm/
       }

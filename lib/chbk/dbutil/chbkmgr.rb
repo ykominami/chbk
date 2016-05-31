@@ -92,11 +92,20 @@ module Chbk
       end
       
       def add_category( category_name , add_date = nil, last_modified = nil )
-        hs = { add_date: add_date, last_modified: last_modified }.select{ |x| x[1] != nil }
+        hs = {add_date: add_date, last_modified: last_modified }.reduce({}){ |hash, x|
+          if x[1] != nil
+            hash[ x[0] ] = x[1]
+          end
+          hash
+        }
         
         if (category = @category_hs[category_name] ) != nil
           category_id = category.id
-          update_integer( category , hs ) if hs.size > 0
+          if hs.size > 0
+            puts "add_category 1 category_name=#{category_name}"
+            p hs
+            update_integer( category , hs )
+          end
         else
           cur_category = Currentcategory.where( name: category_name ).limit(1)
           if cur_category.size == 0
@@ -116,10 +125,14 @@ module Chbk
             cur_category = cur_category.first
             category_id = cur_category['org_id']
             category = Category.find( category_id )
-            update_integer( category , hs ) if hs.size > 0
+            if hs.size > 0
+              puts "add_category 2 category_name=#{category_name}"
+              p hs
+              update_integer( category , hs )
+            end
           end
         end
-        @valid_bminfo << category_id
+        @valid_categoryinfo << category_id
         
         category_id
       end
@@ -145,15 +158,20 @@ module Chbk
       end
       
       def category_add( category_name , add_date , last_modified )
-        puts category_name if last_modified != nil
+#        puts category_name if last_modified != nil
         add_category( category_name , add_date , last_modified )
       end
       
-      def add( category_name , name , url , add_date = nil , last_modified = nil )
+      def add( category_name , name , url , add_date = nil )
         category_id = add_category( category_name )
         @bookmark_hs[category_id] ||= {}
         
-        hs = {:category_id => category_id, :name => name, :url => url , add_date: add_date }
+        #        hs = {:category_id => category_id, :name => name, :url => url , add_date: add_date }
+        hs = {}
+        if add_date != nil
+          hs[:add_date] = add_date
+        end
+        
         if ( bookmark = @bookmark_hs[category_id][url] )
             update_integer( bookmark , hs )
         else
@@ -172,6 +190,7 @@ module Chbk
             end
           else
             bookmark = cur_bookmark.first
+            p hs
             update_integer( bookmark , hs )
           end
         end
@@ -181,19 +200,6 @@ module Chbk
           @valid_bminfo << bookmark.id
         end
         bookmark
-      end
-      
-      def post_process( dir_id )
-        h_ids = Currentbookmark.pluck(:org_id)
-        @bookmark_hs.keys.map{|k|
-          t_ids = @bookmark_hs[k].keys
-          ids = h_ids - t_ids
-          if ids.size > 0
-            ids.each do |idx| 
-              Invalidbookmark.create( org_id: idx , count_id: @count.id )
-            end
-          end
-        }
       end
     end
   end

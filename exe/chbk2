@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
+
+require 'arxutils'
+require "chbk"
+
+dbconfig = Arxutils::Dbutil::DBCONFIG_MYSQL
+dbconfig = Arxutils::Dbutil::DBCONFIG_SQLITE3
+
+hs = {
+  "db_dir" => Arxutils::Dbutil::DB_DIR,
+  "migrate_dir" => Arxutils::Dbutil::MIGRATE_DIR,
+  "config_dir" => Arxutils::Dbutil::CONFIG_DIR,
+  "dbconfig" => dbconfig,
+  "log_fname" => Arxutils::Dbutil::DATABASELOG,
+}
+
+infname = ARGV[0]
+pn = Pathname.new( infname )
+basename = pn.basename(".*")
+dirname = pn.dirname
+ext = pn.extname
+category_pn =  dirname + Pathname.new( basename.to_s + "_category" + ext.to_s )
+chbk = Chbk::Chbk.new(
+                      :db,
+                      hs,
+                      )
+#chbk.connect
+
+def init(chbk , category_pn, pn )
+  chbk.load_category_file( category_pn )
+  chbk.load_bookmark_file( pn )
+end
+
+def category_op(chbk, category_pn)
+  chbk.list_category
+=begin
+  list = chbk.get_list_category
+  list.select{|x| x.add_date != nil }.map{|x|
+#  list.select{|x| x.add_date == nil }.map{|x|
+    puts [ x.name, x.add_date, x.last_modified ].join('|')
+#    puts x.name
+}
+=end
+
+end
+
+def bookmark_op(chbk, pn)
+#  chbk.pickup_multiple_bookmarks_by_add_date
+#  chbk.pickup_multiple_bookmarks_by_url
+  bminfo = chbk.get_latest_bookmark
+  p bminfo
+  chbk.list_bookmark
+end
+
+init(chbk, category_pn , pn )
+category_op(chbk, category_pn)
+bookmark_op(chbk, pn)
