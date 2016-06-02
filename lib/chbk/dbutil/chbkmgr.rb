@@ -17,17 +17,18 @@ module Chbk
     class Bookmark < ActiveRecord::Base
       has_and_belongs_to_many :Counts
       belongs_to :categories , foreign_key: 'category_id'
-      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :counts , foreign_key: 'count_id'
     end
 
     class Invalidbookmark < ActiveRecord::Base
-      belongs_to :bookmarks , foreign_key: 'org_id'      
-      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :bookmarks ,
+                 foreign_key: 'org_id'
+      belongs_to :counts , foreign_key:'count_id'
     end
 
     class Currentbookmark < ActiveRecord::Base
       has_and_belongs_to_many :Counts
-      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :counts , foreign_key: 'count_id'
       belongs_to :bookmarks , foreign_key: 'org_id'
     end
 
@@ -35,19 +36,18 @@ module Chbk
       has_and_belongs_to_many :Counts
       has_many :bookmarks
     end
-    
+
     class Invalidcategory < ActiveRecord::Base
-      belongs_to :categories , foreign_key: 'org_id'      
-      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :categories , foreign_key: 'org_id'
+      belongs_to :counts , foreign_key: 'count_id'
     end
 
     class Currentcategory < ActiveRecord::Base
-      belongs_to :counts , foreign_key: 'count_id'      
+      belongs_to :counts , foreign_key: 'count_id'
       belongs_to :categories , foreign_key: 'org_id'
     end
 
-    class Management < ActiveRecord::Base
-    end
+    class Management < ActiveRecord::Base end
 
     class ChbkMgr
       extend Forwardable
@@ -102,8 +102,6 @@ module Chbk
         if (category = @category_hs[category_name] ) != nil
           category_id = category.id
           if hs.size > 0
-            puts "add_category 1 category_name=#{category_name}"
-            p hs
             update_integer( category , hs )
           end
         else
@@ -114,10 +112,12 @@ module Chbk
               @category_hs[category_name] = category
               category_id = category.id
             rescue => ex
+              p "In add_category"
               p ex.class
               p ex.message
               pp ex.backtrace
-
+              exit
+              
               category = nil
               categorycount = nil
             end
@@ -126,8 +126,6 @@ module Chbk
             category_id = cur_category['org_id']
             category = Category.find( category_id )
             if hs.size > 0
-              puts "add_category 2 category_name=#{category_name}"
-              p hs
               update_integer( category , hs )
             end
           end
@@ -181,16 +179,17 @@ module Chbk
               bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date )
               @bookmark_hs[category_id][name] = bookmark
             rescue => ex
+              puts "In add"
               p ex.class
               p ex.message
               pp ex.backtrace
-
+              exit
+              
               bookmark = nil
               bookmarkcount = nil
             end
           else
             bookmark = cur_bookmark.first
-            p hs
             update_integer( bookmark , hs )
           end
         end

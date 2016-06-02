@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 require 'arxutils'
-require "chbk"
+require "chbk/dbutil/x"
+
+start_time = Time.now
 
 dbconfig = Arxutils::Dbutil::DBCONFIG_MYSQL
 dbconfig = Arxutils::Dbutil::DBCONFIG_SQLITE3
@@ -15,24 +17,43 @@ hs = {
   "log_fname" => Arxutils::Dbutil::DATABASELOG,
 }
 
+def print_diff( end_time , start_time )
+  diff_time = end_time - start_time
+  
+  puts diff_time
+  sec = (diff_time % 60.0).to_i
+  total_min = (diff_time / 60.0).to_i
+  min = total_min % 60
+  total_hour = total_min / 60
+  hour = total_hour % 24
+  total_day = total_hour / 24
+  puts %Q!#{total_day} Days #{hour} Hours #{min} minutes #{sec} seconds!
+end
+
+################################################
+start_time = Time.now
+
 infname = ARGV[0]
 pn = Pathname.new( infname )
 basename = pn.basename(".*")
 dirname = pn.dirname
 ext = pn.extname
 category_pn =  dirname + Pathname.new( basename.to_s + "_category" + ext.to_s )
-chbk = Chbk::Chbk.new(
+chbk = Chbk::Dbutil::Chbk.new(
                       :db,
                       hs,
                       )
 #chbk.connect
 
 def init(chbk , category_pn, pn )
+  puts "load_category_file=#{category_pn}"
   chbk.load_category_file( category_pn )
+  puts "load_bookmark_file=#{pn}"
   chbk.load_bookmark_file( pn )
 end
 
 def category_op(chbk, category_pn)
+  puts "==list_category"
   chbk.list_category
 =begin
   list = chbk.get_list_category
@@ -47,12 +68,26 @@ end
 
 def bookmark_op(chbk, pn)
 #  chbk.pickup_multiple_bookmarks_by_add_date
-#  chbk.pickup_multiple_bookmarks_by_url
+  #  chbk.pickup_multiple_bookmarks_by_url
+  puts "call get_latest_bookmark"
   bminfo = chbk.get_latest_bookmark
-  p bminfo
+  puts "call list_bookmark"
   chbk.list_bookmark
 end
+
 
 init(chbk, category_pn , pn )
 category_op(chbk, category_pn)
 bookmark_op(chbk, pn)
+
+puts "## ensure_invalid"
+chbk.ensure_invalid
+chbk.ensure_management
+
+end_time = Time.now
+diff_time = end_time - start_time
+
+################################################
+end_time = Time.now
+print_diff( end_time, start_time )
+
