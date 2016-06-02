@@ -51,15 +51,15 @@ module Chbk
     end
     
     class TransactState
-      attr_reader :ids
+      attr_accessor :ids , :state
       
       def initialize
-        @state = :NONE
         @ids = []
+        @state = :NONE
       end
 
       def add( xid )
-        @ids << xid
+        @ids << xid if @state == :TRACE
       end
 
       def clear
@@ -67,38 +67,65 @@ module Chbk
       end
 
       def need?
-        @state != :NONE or @ids.size > 0
+        @ids.size > 0
       end
 
-      def start
-        @state = :START
-      end
-
-      def stop
-        @state = :STOP
-      end
-
-      def reset
-        @state = :NONE
-      end
     end
 
     class TransactStateGroup
       def initialize( *names )
+        @state = :NONE
         @inst = {}
         names.map{|x| @inst[x] = TransactState.new }
       end
-
+      
+      def need?
+        @state != :NONE
+      end
+      
+      def set_all_inst_state
+        @inst.map{|x| x[1].state = @state }
+      end
+      
+      def trace
+        @state = :TRACE
+        set_all_inst_state
+      end
+      
+      def reset
+        @state = :NONE
+        set_all_inst_state
+      end
+      
       def method_missing(name , lang = nil)
-        @inst[name]
+        @inst[name] 
       end
     end
-
+    
     class Chbk
+      def set_mode( mode = :MIXED_MODE )
+        @mode = mode
+        # :TRACE_MODE
+        # :ADD_ONLY_MODE
+        # :DELETE_ONLY_MODE
+        # :MIXED_MODE (default value)
+
+        case @mode
+        when :TRACE_MODE
+          @tsg.trace
+        when :ADD_ONLY_MODE
+          @tsg.reset
+        when :DELETE_ONLY_MODE
+          @tsg.reset
+        else
+          # :MIXED_MODE
+          @tsg.reset
+        end
+      end
+      
       def initialize( kind , hs )
-        @ts = TransactStateGroup.new( :category , :bookmark )
-        @ts.category.start
-        @ts.bookmark.start
+        @mode = :MIXED_MODE
+        @tsg = TransactStateGroup.new( :category , :bookmark )
         
         @ignore_lines = 1
         @ignore_lines_category = 0
@@ -107,14 +134,7 @@ module Chbk
         @input_category_file = nil
         
         @bminfo_array = []
-        @bminfo_latest_modified_array = []
         @categoryinfo_array = []
-        @categoryinfo_latest_modified_array = []
-        @bminfo_by_category = {}
-        @bminfos = {}
-        @bminfos_by_add_date = {}
-        @bminfos_by_url = {}
-        @bminfos_by_category = {}
         
         
         @bookmarkinfo = Struct.new("BookmarkInfo", :category, :name, :url , :add_date)
@@ -127,10 +147,6 @@ module Chbk
         @management = nil
         restore_management
 
-        @category_hs = {}
-        @bookmakr_hs = {}
-        @bookmark_by_categoryname = {}
-        @bookmark_hs = {}
 
       end
 
@@ -174,18 +190,6 @@ module Chbk
         }
       end
       
-      def get_record_from_tsv(line)
-        category, name, url, add_date, tmp_ignore = line.chomp.split("\t")
-        add_date , tmp_ignore = normalize_to_integer( add_date )
-        [category, name, url, add_date]
-      end
-      
-      def get_category_record_from_tsv(line)
-        name, add_date, last_modified, tmp_ignore = line.chomp.split("\t")
-        add_date, last_modified = normalize_to_integer( add_date, last_modified )
-        [name, add_date, last_modified]
-      end
-
       def set_add_date_if_need( add_date )
         @latest_add_date = add_date if add_date != nil and add_date > @latest_add_date
       end
@@ -197,38 +201,27 @@ module Chbk
       def get_all_bm
         if @bminfo_array.size == 0
           array = @input_bookmark_file.readlines
-          array.shift(@ignore_lines)
+          if array.first =~ /^category/
+            #            array.shift(@ignore_lines)
+            array.shift
+          end
           count = 0
-          @bminfo_array = array.map{ |line|
+          @bminfo_array = array.reduce([]){ |ary, line|
             begin
-              ary = get_record_from_tsv(line)
-              it = @bookmarkinfo.new( *ary )
+              category, name, url, add_date, tmp_ignore = line.chomp.split("\t")
+              if add_date != nil and add_date !~ /^\s*$/
+                add_date = add_date.to_i
+                it = @bookmarkinfo.new( category, name, url, add_date )
+                set_add_date_if_need( it.add_date ) if it.add_date != nil
+                ary << it
+              end
             rescue => ex
               puts ex.message
               puts ary
               puts "Exit!!"
-#              p @bookmarkinfo
               exit
             end
-            if it
-              if it.add_date != nil 
-                @bminfos_by_add_date[it.add_date] ||= []
-                @bminfos_by_add_date[it.add_date] << it
-                
-                @bminfos_by_url[it.url] ||= []
-                @bminfos_by_url[it.url] << it
-                
-                @bminfos_by_category[it.category] ||= []
-                @bminfos_by_category[it.category] << it
-
-                set_add_date_if_need( it.add_date )
-              else
-                it = nil
-              end
-            end
-            it
-          }.select{ |x|
-            x != nil
+            ary
           }
         end
       end
@@ -237,13 +230,16 @@ module Chbk
         if @categoryinfo_array.size == 0
           count = 0
           array = @input_category_file.readlines
-          @categoryinfo_array = array.map{ |line|
-            it = @categoryinfo.new( *get_category_record_from_tsv(line) )
-            set_add_date_if_need( it.add_date )
-            set_last_modified_if_need( it.last_modified )
-            (it.name == nil or it.add_date == nil ) ? nil : it
-          }.select{ |x|
-            x != nil
+          @categoryinfo_array = array.reduce([]){ |ary, line|
+            name, add_date, last_modified, tmp_ignore = line.chomp.split("\t")
+            add_date, last_modified = normalize_to_integer( add_date, last_modified )
+            if name != nil and add_date != nil
+              it = @categoryinfo.new( name, add_date, last_modified )
+              set_add_date_if_need( it.add_date )
+              set_last_modified_if_need( it.last_modified )
+              ary << it
+            end
+            ary
           }
         end
       end
@@ -251,7 +247,12 @@ module Chbk
       def list_bookmark
         get_all_bm
         @bminfo_array.map{|bookmarkinfo|
-          register_bookmark(  bookmarkinfo.category , bookmarkinfo.name , bookmarkinfo.url , bookmarkinfo.add_date )
+          case @mode
+          when :TRACE_MODE
+            register_bookmark(  bookmarkinfo.category , bookmarkinfo.name , bookmarkinfo.url , bookmarkinfo.add_date )
+          else
+            add_bookmark(  bookmarkinfo.category , bookmarkinfo.name , bookmarkinfo.url , bookmarkinfo.add_date )
+          end
         }
       end
 
@@ -273,31 +274,21 @@ module Chbk
       end
 
       def update_management( add_date , last_modified ) 
-#        Management.find(1).update( add_date: add_date , last_modified: last_modified ) 
         @management.update( add_date: add_date , last_modified: last_modified ) 
       end
       
       def update_integer( model , hs )
         value_hs = hs.reduce({}){ |hsx,item|
           val = model.send(item[0])
-          if val == nil
+          if val == nil or val  < item[1]
             hsx[ item[0] ] = item[1]
-          else
-            if item[1] != nil and val  < item[1]
-              hsx[ item[0] ] = item[1]
-            end
           end
           hsx
         }
         if value_hs.size > 0
-          puts "============================="
-          p model
-          puts model.id
-          puts model.name
-          p value_hs
           begin
             model.update(value_hs)
-            model.save
+#            model.save
           rescue => ex
             puts ex.message
           end
@@ -307,14 +298,11 @@ module Chbk
       def register_category( category_name , add_date = nil, last_modified = nil )
         category_id = nil
         current_category = nil
-        
-        hs = {add_date: add_date, last_modified: last_modified }.reduce({}){ |hash, x|
-          if x[1] != nil
-            hash[ x[0] ] = x[1]
-          end
-          hash
-        }
-        current_category = Currentcategory.where( name: category_name ).limit(1).first
+        hs = {}
+        hs[:add_date] = add_date if add_date
+        hs[:last_modified] = last_modified if last_modified
+
+        current_category = Currentcategory.find_by( name: category_name )
         if current_category
           category_id = current_category.org_id
           if hs.size > 0
@@ -324,9 +312,8 @@ module Chbk
         else
           begin
             category = Category.create( name: category_name , add_date: add_date, last_modified: last_modified )
-            category.save
-            current_category = Currentcategory.where( org_id: category.id ).limit(1).first
-            category_id = current_category.org_id
+#            category.save
+            category_id = category.id
           rescue => ex
             p "In add_category"
             p ex.class
@@ -334,13 +321,12 @@ module Chbk
             pp ex.backtrace
             exit
             
-            current_category = nil
             category_id = nil
           end
         end
 
         if category_id
-          @ts.category.add( category_id )
+          @tsg.category.add( category_id )
         end
         
         category_id
@@ -364,17 +350,24 @@ module Chbk
       def get_last_modified_from_management
         Management.find(1).last_modified
       end
+
+      def add_bookmark( category_name , name , url , add_date = nil )
+        category_id = register_category( category_name )
+        bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date )
+#        bookmark.save
+        bookmark_id = bookmark.id
+      end
       
       def register_bookmark( category_name , name , url , add_date = nil )
+        bookmark_id = nil
         category_id = register_category( category_name )
         
-        current_bookmark = Currentbookmark.where( category_id: category_id , url: url , add_date: add_date).limit(1).first
+        current_bookmark = Currentbookmark.find_by( category_id: category_id , url: url , add_date: add_date)
         unless current_bookmark
           begin
             bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date )
-            bookmark.save
-            #              current_bookmark = Currentbookmark.find( org_id: bookmark.id )
-            current_bookmark = Currentbookmark.where( org_id: bookmark.id ).first
+#            bookmark.save
+            bookmark_id = bookmark.id
           rescue => ex
             puts "In add"
             p ex.class
@@ -384,12 +377,15 @@ module Chbk
             
             current_bookmark = nil
           end
+        else
+          bookmark_id = current_bookmark.org_id
         end
 
-        if current_bookmark
-          @ts.bookmark.add( current_bookmark.org_id )
+        if bookmark_id
+          @tsg.bookmark.add( bookmark_id )
         end
-        current_bookmark
+
+        bookmark_id
       end
       #
 # interface      
@@ -411,17 +407,17 @@ module Chbk
       def ensure_invalid
         puts "call ensure_invalid"
 #        invalid_ids = Currentbookmark.pluck(:org_id) - @valid_bminfo.to_a
-        invalid_ids = Currentbookmark.pluck(:org_id) - @ts.bookmark.ids
-        puts "bookmark invalid_ids="
-        p invalid_ids
+        invalid_ids = Currentbookmark.pluck(:org_id) - @tsg.bookmark.ids
+#        puts "bookmark invalid_ids="
+#        p invalid_ids
         invalid_ids.map{|x|
           Invalidbookmark.create( org_id: x , end_count_id: @count.id )
         }
 
 #        invalid_ids = Currentcategory.pluck(:org_id) - @valid_categoryinfo.to_a
-        invalid_ids = Currentcategory.pluck(:org_id) - @ts.category.ids
-        puts "category invalid_ids="
-        p invalid_ids
+        invalid_ids = Currentcategory.pluck(:org_id) - @tsg.category.ids
+#        puts "category invalid_ids="
+#        p invalid_ids
         invalid_ids.map{|x|
           Invalidcategory.create( org_id: x , end_count_id: @count.id )
         }
