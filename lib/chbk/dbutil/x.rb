@@ -14,19 +14,19 @@ module Chbk
 
     class Bookmark < ActiveRecord::Base
       has_and_belongs_to_many :Counts
-      belongs_to :categories , foreign_key: 'category_id'
-      belongs_to :counts , foreign_key: 'count_id'
+      belongs_to :category , foreign_key: 'category_id'
+      belongs_to :count , foreign_key: 'count_id'
     end
 
     class Invalidbookmark < ActiveRecord::Base
-      belongs_to :bookmarks , foreign_key: 'org_id'
-      belongs_to :counts , foreign_key: 'count_id'
+      belongs_to :bookmark , foreign_key: 'org_id'
+      belongs_to :count , foreign_key: 'count_id'
     end
 
     class Currentbookmark < ActiveRecord::Base
       has_and_belongs_to_many :Counts
-      belongs_to :counts , foreign_key: 'count_id'
-      belongs_to :bookmarks , foreign_key: 'org_id'
+      belongs_to :count , foreign_key: 'count_id'
+      belongs_to :bookmark , foreign_key: 'org_id'
     end
 
     class Category < ActiveRecord::Base
@@ -35,13 +35,13 @@ module Chbk
     end
 
     class Invalidcategory < ActiveRecord::Base
-      belongs_to :categories , foreign_key: 'org_id'
-      belongs_to :counts , foreign_key: 'count_id'
+      belongs_to :category , foreign_key: 'org_id'
+      belongs_to :count , foreign_key: 'count_id'
     end
 
     class Currentcategory < ActiveRecord::Base
-      belongs_to :counts , foreign_key: 'count_id'
-      belongs_to :categories , foreign_key: 'org_id'
+      belongs_to :count , foreign_key: 'count_id'
+      belongs_to :category , foreign_key: 'org_id'
     end
 
     class Management < ActiveRecord::Base
@@ -306,8 +306,9 @@ module Chbk
         if current_category
           category_id = current_category.org_id
           if hs.size > 0
-            category = Category.find( category_id )
-            update_integer( category , hs )
+#            category = Category.find( category_id )
+#            update_integer( category , hs )
+            update_integer( current_category.category , hs )
           end
         else
           begin
@@ -363,7 +364,9 @@ module Chbk
         category_id = register_category( category_name )
         
         current_bookmark = Currentbookmark.find_by( category_id: category_id , url: url , add_date: add_date)
-        unless current_bookmark
+        if current_bookmark
+          bookmark_id = current_bookmark.org_id
+        else
           begin
             bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date )
 #            bookmark.save
@@ -377,8 +380,6 @@ module Chbk
             
             current_bookmark = nil
           end
-        else
-          bookmark_id = current_bookmark.org_id
         end
 
         if bookmark_id
