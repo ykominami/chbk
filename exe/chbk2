@@ -75,6 +75,8 @@ end
 init(chbk, category_pn , pn )
 time_hs[:CATEGORY_OP] = Time.now
 category_op(chbk, category_pn)
+time_hs[:ENSURE_CATEGORYHIER] = Time.now
+chbk.ensure_categoryhier
 time_hs[:BOOKMARK_OP] = Time.now
 bookmark_op(chbk, pn)
 time_hs[:ENSURE_INVALID] = Time.now
@@ -94,8 +96,11 @@ puts "###"
 puts ":START -> :CATEGORY_OP"
 print_diff( time_hs[:CATEGORY_OP], time_hs[:START] )
 puts "###"
-puts ":CATEGORY_OP -> :BOOKMARK_OP"
-print_diff( time_hs[:BOOKMARK_OP] , time_hs[:CATEGORY_OP] )
+puts ":CATEGORY_OP -> :ENSURE_CATEGORYHIER"
+print_diff( time_hs[:CATEGORY_OP] , time_hs[:ENSURE_CATEGORYHIER] )
+
+puts ":ENSURE_CATEGORYHIER -> :BOOKMARK_OP"
+print_diff( time_hs[:BOOKMARK_OP] , time_hs[:ENSURE_CATEGORYHIER] )
 puts "###"
 puts ":BOOKMARK_OP -> :ENSURE_INVALID"
 print_diff( time_hs[:ENSURE_INVALID] , time_hs[:BOOKMARK_OP]  )

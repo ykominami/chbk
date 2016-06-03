@@ -24,10 +24,21 @@ task :migrate do
       :items => [
         ["category_id" , "integer", "false"],
         ["name" , "string", "true"],
-        ["url" , "string", "false"],
+        ["url_id" , "integer", "false"],
         ["add_date" , "int", "true"],
       ],
       :plural => "bookmarks"
+    },
+
+    {
+      :flist => %W!base invalid current!,
+      :classname => "Url",
+      :classname_downcase => "url",
+
+      :items => [
+        ["val" , "string", "false"],
+      ],
+      :plural => "urls"
     },
 
     {
@@ -43,6 +54,18 @@ task :migrate do
       :plural => "categories"
     },
     
+    {
+      :flist => %W!noitem!,
+      :classname => "Categoryhier",
+      :classname_downcase => "categoryhier",
+      :items => [
+        ["parent_id" , "int", "false"],
+        ["child_id" , "int", "false"],
+        ["level" , "int", "false"],
+      ],
+      :plural => "categoryhiers"
+    },
+
     {
       :flist => %W!noitem!,
       :classname => "Management",

@@ -4,33 +4,26 @@ require 'arxutils'
 module Chbk
   module Dbutil
     class Count < ActiveRecord::Base
-      has_and_belongs_to_many :bookmarks
-      has_and_belongs_to_many :categories
-      has_and_belongs_to_many :currentbookmarks
-      has_and_belongs_to_many :currentcategories
       has_many :invalidbookmarks
       has_many :invalidcategories
+      has_many :invalidurls
     end
 
     class Bookmark < ActiveRecord::Base
-      has_and_belongs_to_many :Counts
       belongs_to :category , foreign_key: 'category_id'
-      belongs_to :count , foreign_key: 'count_id'
+      belongs_to :url , foreign_key: 'url_id'
     end
 
     class Invalidbookmark < ActiveRecord::Base
       belongs_to :bookmark , foreign_key: 'org_id'
-      belongs_to :count , foreign_key: 'count_id'
+      belongs_to :count , foreign_key: 'end_count_id'
     end
 
     class Currentbookmark < ActiveRecord::Base
-      has_and_belongs_to_many :Counts
-      belongs_to :count , foreign_key: 'count_id'
       belongs_to :bookmark , foreign_key: 'org_id'
     end
 
     class Category < ActiveRecord::Base
-      has_and_belongs_to_many :Counts
       has_many :bookmarks
     end
 
@@ -40,66 +33,28 @@ module Chbk
     end
 
     class Currentcategory < ActiveRecord::Base
-      belongs_to :count , foreign_key: 'count_id'
       belongs_to :category , foreign_key: 'org_id'
+    end
+
+    class Url < ActiveRecord::Base
+      has_many :bookmarks
+    end
+
+    class Invalidurl < ActiveRecord::Base
+      belongs_to :url , foreign_key: 'org_id'
+      belongs_to :count , foreign_key: 'count_id'
+    end
+
+    class Currenturl < ActiveRecord::Base
+      belongs_to :url , foreign_key: 'org_id'
     end
 
     class Management < ActiveRecord::Base
     end
 
     class Categoryhier < ActiveRecord::Base
-    end
-    
-    class TransactState
-      attr_accessor :ids , :state
-      
-      def initialize
-        @ids = []
-        @state = :NONE
-      end
-
-      def add( xid )
-        @ids << xid if @state == :TRACE
-      end
-
-      def clear
-        @ids = []
-      end
-
-      def need?
-        @ids.size > 0
-      end
-
-    end
-
-    class TransactStateGroup
-      def initialize( *names )
-        @state = :NONE
-        @inst = {}
-        names.map{|x| @inst[x] = TransactState.new }
-      end
-      
-      def need?
-        @state != :NONE
-      end
-      
-      def set_all_inst_state
-        @inst.map{|x| x[1].state = @state }
-      end
-      
-      def trace
-        @state = :TRACE
-        set_all_inst_state
-      end
-      
-      def reset
-        @state = :NONE
-        set_all_inst_state
-      end
-      
-      def method_missing(name , lang = nil)
-        @inst[name] 
-      end
+      belongs_to :category , foreign_key: 'parent_id'
+      belongs_to :category , foreign_key: 'child_id'
     end
     
     class Chbk
@@ -125,11 +80,11 @@ module Chbk
       
       def initialize( kind , hs )
         @mode = :MIXED_MODE
-        @tsg = TransactStateGroup.new( :category , :bookmark )
+        @tsg = Arxutils::TransactStateGroup.new( :category , :bookmark , :url )
         
         @ignore_lines = 1
         @ignore_lines_category = 0
-        #      @line = 1
+
         @input_bookmark_file = nil
         @input_category_file = nil
         
@@ -143,35 +98,11 @@ module Chbk
         Arxutils::Store.init( kind , hs ){ | register_time |
           @count = Count.create( countdatetime: register_time )
         }
-#
+
         @management = nil
         restore_management
-
-
       end
 
-      # not used
-=begin      
-      def set_output_dest( fname )
-        if fname
-          fname_txt = fname + ".txt"
-          fname_csv = fname + ".csv"
-          @output = File.open( fname_txt , "w" , { :encoding => 'UTF-8' } )
-          @output_csv = CSV.open( fname_csv , "w" , { :encoding => 'UTF-8' } )
-        else
-          @output = STDOUT
-        end
-      end
-
-      def get_output_filename_base
-        Time.now.strftime("bm-%Y-%m-%d-%H-%M-%S")
-      end
-=end      
-
-      def load_file( in_file )
-        File.open( in_file , "r" , { :encoding => 'UTF-8' } )
-      end
-      
       def load_bookmark_file( in_file )
         @input_bookmark_file = load_file( in_file )
       end
@@ -180,16 +111,6 @@ module Chbk
         @input_category_file = load_file( in_file )
       end
 
-      def normalize_to_integer( *args )
-        args.map{ |x|
-          if x != nil and x !~ /^\s*$/
-            x.to_i
-          else
-            nil
-          end
-        }
-      end
-      
       def set_add_date_if_need( add_date )
         @latest_add_date = add_date if add_date != nil and add_date > @latest_add_date
       end
@@ -267,6 +188,17 @@ module Chbk
         @latest_add_date > @prev_latest_add_date or @latest_last_modified > @prev_latest_last_modified
       end
       
+      def setup_management
+        unless @management
+          begin
+            @management = Management.find(1)
+          rescue
+            # レコードが0個の場合、例外が発生する
+          end
+          @management = Management.create( add_date: 0 , last_modified: 0 ) unless @management
+        end
+      end
+      
       def restore_management
         setup_management
         @prev_latest_add_date = @latest_add_date = @management.add_date
@@ -277,24 +209,6 @@ module Chbk
         @management.update( add_date: add_date , last_modified: last_modified ) 
       end
       
-      def update_integer( model , hs )
-        value_hs = hs.reduce({}){ |hsx,item|
-          val = model.send(item[0])
-          if val == nil or val  < item[1]
-            hsx[ item[0] ] = item[1]
-          end
-          hsx
-        }
-        if value_hs.size > 0
-          begin
-            model.update(value_hs)
-#            model.save
-          rescue => ex
-            puts ex.message
-          end
-        end
-      end
-
       def register_category( category_name , add_date = nil, last_modified = nil )
         category_id = nil
         current_category = nil
@@ -306,14 +220,11 @@ module Chbk
         if current_category
           category_id = current_category.org_id
           if hs.size > 0
-#            category = Category.find( category_id )
-#            update_integer( category , hs )
             update_integer( current_category.category , hs )
           end
         else
           begin
             category = Category.create( name: category_name , add_date: add_date, last_modified: last_modified )
-#            category.save
             category_id = category.id
           rescue => ex
             p "In add_category"
@@ -332,16 +243,11 @@ module Chbk
         
         category_id
       end
-      
-      def setup_management
-        unless @management
-          begin
-            @management = Management.find(1)
-          rescue
-            # レコードが0個の場合、例外が発生する
-          end
-          @management = Management.create( add_date: 0 , last_modified: 0 ) unless @management
-        end
+
+      def ensure_categoryhier
+        Category.pluck(:name).map{|x|
+          register_categoryhier( x )
+        }
       end
       
       def get_add_date_from_management
@@ -354,22 +260,50 @@ module Chbk
 
       def add_bookmark( category_name , name , url , add_date = nil )
         category_id = register_category( category_name )
-        bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date )
-#        bookmark.save
+        url_id = register_url( url )
+        bookmark = Bookmark.create( category_id: category_id, name: name, url_id: url_id, add_date: add_date )
         bookmark_id = bookmark.id
+      end
+      
+      def register_url( val )
+        url_id = nil
+        current_url = Currenturl.find_by( val: val )
+        if current_url
+          url_id = current_url.org_id
+        else
+          begin
+            url = Url.create( val: val )
+            url_id = url.id
+          rescue => ex
+            puts "In add"
+            p ex.class
+            p ex.message
+            pp ex.backtrace
+            exit
+            
+            current_url = nil
+          end
+        end
+
+        if url_id
+          @tsg.url.add( url_id )
+        end
+        
+        url_id
       end
       
       def register_bookmark( category_name , name , url , add_date = nil )
         bookmark_id = nil
         category_id = register_category( category_name )
+        url_id = nil
+        url_id = register_url( url )
         
-        current_bookmark = Currentbookmark.find_by( category_id: category_id , url: url , add_date: add_date)
+        current_bookmark = Currentbookmark.find_by( category_id: category_id , url_id: url_id , add_date: add_date)
         if current_bookmark
           bookmark_id = current_bookmark.org_id
         else
           begin
-            bookmark = Bookmark.create( category_id: category_id, name: name, url: url, add_date: add_date )
-#            bookmark.save
+            bookmark = Bookmark.create( category_id: category_id, name: name, url_id: url_id, add_date: add_date )
             bookmark_id = bookmark.id
           rescue => ex
             puts "In add"
@@ -388,6 +322,7 @@ module Chbk
 
         bookmark_id
       end
+
       #
 # interface      
       def get_latest_bookmark
@@ -406,21 +341,19 @@ module Chbk
       end
       
       def ensure_invalid
-        puts "call ensure_invalid"
-#        invalid_ids = Currentbookmark.pluck(:org_id) - @valid_bminfo.to_a
         invalid_ids = Currentbookmark.pluck(:org_id) - @tsg.bookmark.ids
-#        puts "bookmark invalid_ids="
-#        p invalid_ids
         invalid_ids.map{|x|
           Invalidbookmark.create( org_id: x , end_count_id: @count.id )
         }
 
-#        invalid_ids = Currentcategory.pluck(:org_id) - @valid_categoryinfo.to_a
         invalid_ids = Currentcategory.pluck(:org_id) - @tsg.category.ids
-#        puts "category invalid_ids="
-#        p invalid_ids
         invalid_ids.map{|x|
           Invalidcategory.create( org_id: x , end_count_id: @count.id )
+        }
+
+        invalid_ids = Currenturl.pluck(:org_id) - @tsg.url.ids
+        invalid_ids.map{|x|
+          Invalidurl.create( org_id: x , end_count_id: @count.id )
         }
       end
     
