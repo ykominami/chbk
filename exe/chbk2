@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 require 'arxutils'
-require "chbk/dbutil/x"
+require "chbk/chbk"
 
 start_time = Time.now
 
@@ -47,11 +47,10 @@ basename = pn.basename(".*")
 dirname = pn.dirname
 ext = pn.extname
 category_pn =  dirname + Pathname.new( basename.to_s + "_category" + ext.to_s )
-chbk = Chbk::Dbutil::Chbk.new(
+chbk = Chbk::Chbk.new(
                       :db,
                       hs,
                       )
-#chbk.connect
 chbk.set_mode( mode )
 
 def init(chbk , category_pn, pn )

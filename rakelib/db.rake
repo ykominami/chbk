@@ -1,5 +1,6 @@
 # coding: utf-8
 require 'arxutils'
+require 'pp'
 
 desc <<-EOS
   db migration
@@ -27,7 +28,11 @@ task :migrate do
         ["url_id" , "integer", "false"],
         ["add_date" , "int", "true"],
       ],
-      :plural => "bookmarks"
+      :plural => "bookmarks",
+      :relation => [
+        %Q!belongs_to :category , foreign_key: 'category_id'!,
+        %Q!belongs_to :url , foreign_key: 'url_id'!,
+      ]
     },
 
     {
@@ -38,7 +43,10 @@ task :migrate do
       :items => [
         ["val" , "string", "false"],
       ],
-      :plural => "urls"
+      :plural => "urls",
+      :relation => [
+        %Q!has_many :bookmarks!,
+      ]
     },
 
     {
@@ -51,7 +59,10 @@ task :migrate do
         ["add_date" , "int", "true"],
         ["last_modified" , "int", "true"],
       ],
-      :plural => "categories"
+      :plural => "categories",
+      :relation => [
+        %Q!has_many :bookmarks!,
+      ]
     },
     
     {
@@ -63,7 +74,11 @@ task :migrate do
         ["child_id" , "int", "false"],
         ["level" , "int", "false"],
       ],
-      :plural => "categoryhiers"
+      :plural => "categoryhiers",
+      :relation => [
+        %Q!belongs_to :category , foreign_key: 'parent_id'!,
+        %Q!belongs_to :category , foreign_key: 'child_id'!,
+      ]
     },
 
     {
@@ -75,7 +90,7 @@ task :migrate do
         ["add_date" , "int", "false"],
         ["last_modified" , "int", "false"],
       ],
-      :plural => "managements"
+      :plural => "managements",
     },
   ]
 
@@ -83,11 +98,19 @@ task :migrate do
   dbconfig = Arxutils::Dbutil::DBCONFIG_SQLITE3
 
   forced = true
-  Arxutils::Migrate.migrate(
-    db_def_ary,
-    0,
-    dbconfig,
-    forced
-  )
 
+  begin
+    Arxutils::Migrate.migrate(
+      db_def_ary,
+      %q!lib/chbk/relation.rb!,
+      "Chbk",
+      "count",
+      "end_count_id",
+      dbconfig,
+      forced
+    )
+  rescue => ex
+    puts ex.message
+    pp ex.backtrace
+  end
 end

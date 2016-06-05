@@ -14,4 +14,8 @@ bm-*.txt
 exe/chbk-server
 /db-old*/
 /exe/t.rb
+/exe/z.rb
+/.gitignore
+/lib/chbk/relation.rb
+
 
