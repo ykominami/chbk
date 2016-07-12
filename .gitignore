@@ -17,5 +17,12 @@ exe/chbk-server
 /exe/z.rb
 /.gitignore
 /lib/chbk/relation.rb
+/db-x/
+/exe/chbka
+/exe/chbkb
+/l.txt
+/l2.txt
+/lib/chbk/tmp
+
 
 
