@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-require 'chbk/dbutil/chbkmgr'
 require 'forwardable'
 require 'pp'
 
