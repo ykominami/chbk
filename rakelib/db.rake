@@ -94,8 +94,11 @@ task :migrate do
     },
   ]
 
-  dbconfig = Arxutils::Dbutil::DBCONFIG_MYSQL
-  dbconfig = Arxutils::Dbutil::DBCONFIG_SQLITE3
+  dbname = 'chbk'
+  db_dir = File.join( Arxutils::Dbutil::DB_DIR , dbname )
+  config_dir = File.join( Arxutils::Dbutil::CONFIG_DIR , dbname )
+  dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_MYSQL , :dbname => dbname , :db_dir => db_dir }
+  dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_SQLITE3 , :db_dir => db_dir }
 
   forced = true
 
@@ -105,7 +108,6 @@ task :migrate do
       %q!lib/chbk/relation.rb!,
       "Chbk",
       "count",
-      "end_count_id",
       dbconfig,
       forced
     )
