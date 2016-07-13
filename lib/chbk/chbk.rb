@@ -351,17 +351,17 @@ module Chbk
     def ensure_invalid
       invalid_ids = Currentbookmark.pluck(:org_id) - @tsg.bookmark.ids
       invalid_ids.map{|x|
-        Invalidbookmark.create( org_id: x , end_count_id: @count.id )
+        Invalidbookmark.create( org_id: x , count_id: @count.id )
       }
 
       invalid_ids = Currentcategory.pluck(:org_id) - @tsg.category.ids
       invalid_ids.map{|x|
-        Invalidcategory.create( org_id: x , end_count_id: @count.id )
+        Invalidcategory.create( org_id: x , count_id: @count.id )
       }
 
       invalid_ids = Currenturl.pluck(:org_id) - @tsg.url.ids
       invalid_ids.map{|x|
-        Invalidurl.create( org_id: x , end_count_id: @count.id )
+        Invalidurl.create( org_id: x , count_id: @count.id )
       }
     end
     
