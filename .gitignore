@@ -23,6 +23,8 @@ exe/chbk-server
 /l.txt
 /l2.txt
 /lib/chbk/tmp
+/config/
+.gitignore
 
 
 
