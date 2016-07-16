@@ -4,61 +4,6 @@ require 'forwardable'
 require 'chbk/relation'
 
 module Chbk
-=begin  
-  class Count < ActiveRecord::Base
-    has_many :invalidbookmarks
-    has_many :invalidcategories
-    has_many :invalidurls
-  end
-
-  class Bookmark < ActiveRecord::Base
-    belongs_to :category , foreign_key: 'category_id'
-    belongs_to :url , foreign_key: 'url_id'
-  end
-
-  class Invalidbookmark < ActiveRecord::Base
-    belongs_to :bookmark , foreign_key: 'org_id'
-    belongs_to :count , foreign_key: 'end_count_id'
-  end
-
-  class Currentbookmark < ActiveRecord::Base
-    belongs_to :bookmark , foreign_key: 'org_id'
-  end
-
-  class Category < ActiveRecord::Base
-    has_many :bookmarks
-  end
-
-  class Invalidcategory < ActiveRecord::Base
-    belongs_to :category , foreign_key: 'org_id'
-    belongs_to :count , foreign_key: 'count_id'
-  end
-
-  class Currentcategory < ActiveRecord::Base
-    belongs_to :category , foreign_key: 'org_id'
-  end
-
-  class Url < ActiveRecord::Base
-    has_many :bookmarks
-  end
-
-  class Invalidurl < ActiveRecord::Base
-    belongs_to :url , foreign_key: 'org_id'
-    belongs_to :count , foreign_key: 'count_id'
-  end
-
-  class Currenturl < ActiveRecord::Base
-    belongs_to :url , foreign_key: 'org_id'
-  end
-
-  class Management < ActiveRecord::Base
-  end
-
-  class Categoryhier < ActiveRecord::Base
-    belongs_to :category , foreign_key: 'parent_id'
-    belongs_to :category , foreign_key: 'child_id'
-  end
-=end  
   class Chbk
     extend Forwardable
     include Arxutils
