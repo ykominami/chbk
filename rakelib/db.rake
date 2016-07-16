@@ -97,8 +97,8 @@ task :migrate do
   dbname = 'chbk'
   db_dir = File.join( Arxutils::Dbutil::DB_DIR , dbname )
   config_dir = File.join( Arxutils::Dbutil::CONFIG_DIR , dbname )
-  dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_MYSQL , :dbname => dbname , :db_dir => db_dir }
-  dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_SQLITE3 , :db_dir => db_dir }
+  dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_MYSQL , :dbname => dbname , :db_dir => db_dir , :config_dir => config_dir }
+  dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_SQLITE3 , :db_dir => db_dir, :config_dir => config_dir }
 
   forced = true
 
