@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>jsTree test</title>
+    <link rel="stylesheet" type="text/css" href="/chbk/jstree/dist/themes/default/style.min.css" />
+    <script src="/chbk/jquery-1.12.4.js"></script>
+    <script type="text/javascript" src="/chbk/jstree/dist/jstree.js"></script>
+
+    <link rel="stylesheet" href="/chbk/SlickGrid/slick.grid.css" type="text/css"/>
+    <link rel="stylesheet" href="/chbk/SlickGrid/css/smoothness/jquery-ui-1.11.3.custom.css" type="text/css"/>
+    <script src="/chbk/SlickGrid/lib/firebugx.js"></script>
+    <script src="/chbk/jquery-ui-1.11.3.js"></script>
+    <script src="/chbk/SlickGrid/lib/jquery.event.drag-2.2.js"></script>
+    <script src="/chbk/SlickGrid/lib/jquery.jsonp-2.4.min.js"></script>
+
+    <script src="/chbk/SlickGrid/slick.core.js"></script>
+    <script src="/chbk/slick.remotemodel-base.js"></script>
+    <script src="/chbk/slick.remotemodel-chbk.js"></script>
+    <script src="/chbk/SlickGrid/slick.grid.js"></script> 
+    <script src="/chbk/jsta.js"></script> 
+    
+    <style>
+      #wrap{
+        float: left;
+        width: 100%;
+        margin-right: -1130px;
+        height: 821px;
+      }
+      
+      #content{
+        margin-right: 1130px;
+        height: 821px;
+        overflow: auto;
+      }
+      
+      #sub{
+        float: left;
+        width: 820px;
+        border-left: solid 3px #7b3b3b;
+       height: 821px;
+      }
+      
+  
+      .slick-row {
+        line-height:16px;
+      }
+        .loading-indicator {
+            display: inline-block;
+            padding: 12px;
+            background: white;
+            -opacity: 0.5;
+            color: black;
+            font-weight: bold;
+            z-index: 9999;
+            border: 1px solid red;
+            -moz-border-radius: 10px;
+            -webkit-border-radius: 10px;
+            -moz-box-shadow: 0 0 5px red;
+            -webkit-box-shadow: 0px 0px 5px red;
+            -text-shadow: 1px 1px 1px white;
+        }
+        .loading-indicator label {
+            padding-left: 20px;
+            background: url('/chbk/SlickGrid/images/ajax-loader-small.gif') no-repeat center left;
+      }
+      .jquery-ui-autocomplete-input a  {
+        font-size: 16pt;
+      }
+      .jquery-ui-autocomplete-input a {
+        font-size: 16pt;
+      }
+  
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <span style="display:block;">
+        <input type="text" id="category-search" value="">
+      </span>
+      
+      <div id="content">
+	<div id="jstree"></div>
+      </div>
+    </div>
+
+    <div id="sub">
+      <div class="grid-header" style="width:100%">
+        <span style="float:left;display:inline-block;">
+          <input type="text" id="jquery-ui-autocomplete-input" value="">
+        </span>
+        <button id="upbtn">Up</button><button id="downbtn">Down</button>
+
+        <span style="float:right;display:inline-block;">
+          <input type="text" id="txtSearch" value="">
+        </span>
+      </div>
+      <div id="myGrid" style="width:100%;height:800px;"></div>
+    </div>
+
+  </body>
+</html>
