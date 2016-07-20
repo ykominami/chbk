@@ -39,10 +39,10 @@ SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , d
     this.columns = [
 	//        {id: "mpn", name: "name", field: "name", formatter: mpnFormatter, width: 100, sortable: true },
 	//        {id: "id", name: "id", field: "id", formatter: brandFormatter, width: 100, sortable: true },
-        {id: "name", name: "name"       , field: "name"             , width: 260 },
-        {id: "id"  , name: "id"         , field: "id"               , width: 60 },
-        {id: "desc", name: "Description", field: "short_description", width: 250 },
-        {id: "url", name: "Url", field: "url", width: 250 },
+        {id: "name", name: "name"       , field: "name"             , width: 500 },
+        {id: "id"  , name: "id"         , field: "id"               , width:  80 },
+        {id: "desc", name: "Description", field: "short_description", width: 500 },
+        {id: "url", name: "Url", field: "url"                       , width: 500 },
     ];
     this.options = {
         rowHeight: 21,
