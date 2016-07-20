@@ -326,7 +326,7 @@ module Chbk
       puts "category_id=#{category_id}|start=#{start}|limit=#{limit}"
       JSON(
         Currentbookmark.where( category_id: category_id ).all[ start , limit ].map{ |x|
-          { "id" => x.id , "name" => x.name , "url" => x.bookmark }
+          { "id" => x.id , "name" => x.name , "url" => x.bookmark.url.val }
         }
       )
     end
