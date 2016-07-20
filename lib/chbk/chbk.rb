@@ -9,9 +9,8 @@ module Chbk
     include Arxutils
     
     def_delegator( :@hierop , :register, :register_categoryhier )
-
+    def_delegator( :@hierop , :get_category_hier_json , :get_category_hier_json )
     def set_mode( mode = :MIXED_MODE )
-      @hierop = HierOp.new( :name , Category , Categoryhier, Currentcategory )
       @mode = mode
       # :TRACE_MODE
       # :ADD_ONLY_MODE
@@ -30,8 +29,11 @@ module Chbk
         @tsg.reset
       end
     end
-    
+
     def initialize( kind , hs )
+      # HierOpはArxutilsで定義されている階層構造表すテーブルに対する操作を行うクラス
+      @hierop = HierOp.new( "category_id" , :name , "category" , Category , Categoryhier, Currentcategory , Invalidcategory )
+
       @mode = :MIXED_MODE
       @tsg = TransactStateGroup.new( :category , :bookmark , :url )
       
@@ -169,7 +171,7 @@ module Chbk
       hs[:add_date] = add_date if add_date
       hs[:last_modified] = last_modified if last_modified
 
-      current_category = Currentcategory.find_by( name: category_name )
+      current_category = @hierop.current_klass.find_by( name: category_name )
       if current_category
         category_id = current_category.org_id
         if hs.size > 0
@@ -177,7 +179,7 @@ module Chbk
         end
       else
         begin
-          category = Category.create( name: category_name , add_date: add_date, last_modified: last_modified )
+          category = @hierop.base_klass.create( name: category_name , add_date: add_date, last_modified: last_modified )
           category_id = category.id
         rescue => ex
           p "In add_category"
@@ -198,7 +200,7 @@ module Chbk
     end
 
     def ensure_categoryhier
-      Category.pluck(:name).map{|x|
+      @hierop.base_klass.pluck(:name).map{|x|
         register_categoryhier( x )
       }
     end
@@ -299,9 +301,9 @@ module Chbk
         Invalidbookmark.create( org_id: x , count_id: @count.id )
       }
 
-      invalid_ids = Currentcategory.pluck(:org_id) - @tsg.category.ids
+      invalid_ids = @hierop.current_klass.pluck(:org_id) - @tsg.category.ids
       invalid_ids.map{|x|
-        Invalidcategory.create( org_id: x , count_id: @count.id )
+        @hierop.invalid_klass.create( org_id: x , count_id: @count.id )
       }
 
       invalid_ids = Currenturl.pluck(:org_id) - @tsg.url.ids
@@ -309,7 +311,42 @@ module Chbk
         Invalidurl.create( org_id: x , count_id: @count.id )
       }
     end
+
+    def get_bookmarks_json( hier , start , limit )
+      cur = @hierop.current_klass.find_by( hier: hier )
+      if cur
+        category_id = cur.org_id
+        get_bookmarks_by_id_json( category_id , start , limit )
+      else
+        JSON([])
+      end
+    end
+
+    def get_bookmarks_by_id_json( category_id , start , limit )
+      puts "category_id=#{category_id}|start=#{start}|limit=#{limit}"
+      JSON(
+        Currentbookmark.where( category_id: category_id ).all[ start , limit ].map{ |x|
+          { "id" => x.id , "name" => x.name , "url" => x.bookmark }
+        }
+      )
+    end
     
+    def get_bookmarks_count_json( hier )
+      cur = @hierop.current_klass.find_by( name: hier )
+      if cur
+        category_id = cur.org_id
+        get_bookmarks_count_by_id_json( category_id )
+      else
+        JSON([ { "count" => 0 } ])
+      end
+    end
+
+    def get_bookmarks_count_by_id_json( category_id )
+      puts "category_id=#{category_id}"
+      JSON(
+        [ { "count" => Currentbookmark.where( category_id: category_id ).pluck( :org_id ).count } ]
+      )
+    end
 
 =begin
      # interface      
