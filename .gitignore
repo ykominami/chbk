@@ -34,7 +34,10 @@ exe/public/chbk/jstree
 exe/public/chbk/*.js
 exe/public/chbk/*.html
 exe/public/chbk/*.map
-
-
-
+exe/public/SlickGrid
+exe/public/autocomplete
+exe/public/jstree
+exe/public/tmp
+exe/public/*.js
+exe/public/*.map
 
