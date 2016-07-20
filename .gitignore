@@ -25,6 +25,9 @@ exe/chbk-server
 /lib/chbk/tmp
 /config/
 .gitignore
+/db-y
+/exe/chbk_hier
+/vendor
 
 
 
