@@ -28,6 +28,13 @@ exe/chbk-server
 /db-y
 /exe/chbk_hier
 /vendor
+exe/public/chbk/SlickGrid
+exe/public/chbk/autocomplete
+exe/public/chbk/jstree
+exe/public/chbk/*.js
+exe/public/chbk/*.html
+exe/public/chbk/*.map
+
 
 
 
