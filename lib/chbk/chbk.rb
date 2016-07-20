@@ -10,6 +10,7 @@ module Chbk
     
     def_delegator( :@hierop , :register, :register_categoryhier )
     def_delegator( :@hierop , :get_category_hier_json , :get_category_hier_json )
+
     def set_mode( mode = :MIXED_MODE )
       @mode = mode
       # :TRACE_MODE
@@ -313,7 +314,7 @@ module Chbk
     end
 
     def get_bookmarks_json( hier , start , limit )
-      cur = @hierop.current_klass.find_by( hier: hier )
+      cur = @hierop.current_klass.find_by( name: hier )
       if cur
         category_id = cur.org_id
         get_bookmarks_by_id_json( category_id , start , limit )
@@ -324,11 +325,15 @@ module Chbk
 
     def get_bookmarks_by_id_json( category_id , start , limit )
       puts "category_id=#{category_id}|start=#{start}|limit=#{limit}"
-      JSON(
-        Currentbookmark.where( category_id: category_id ).all[ start , limit ].map{ |x|
-          { "id" => x.id , "name" => x.name , "url" => x.bookmark.url.val }
-        }
-      )
+      if category_id
+        JSON(
+          Currentbookmark.where( category_id: category_id ).all[ start , limit ].map{ |x|
+            { "id" => x.id , "name" => x.name , "url" => x.bookmark.url.val }
+          }
+        )
+      else
+        JSON([])
+      end
     end
     
     def get_bookmarks_count_json( hier )
@@ -343,9 +348,13 @@ module Chbk
 
     def get_bookmarks_count_by_id_json( category_id )
       puts "category_id=#{category_id}"
-      JSON(
-        [ { "count" => Currentbookmark.where( category_id: category_id ).pluck( :org_id ).count } ]
-      )
+      if category_id
+        JSON(
+          [ { "count" => Currentbookmark.where( category_id: category_id ).pluck( :org_id ).count } ]
+        )
+      else
+        JSON([])
+      end
     end
 
 =begin
