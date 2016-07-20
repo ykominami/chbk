@@ -185,6 +185,7 @@
     }
 
     RemoteModelBase.prototype.onErrorCount = function onErrorCount() {
+	alert("Base:error loading pages " + fromPage + " to " + toPage);
     }
     
     RemoteModelBase.prototype.onSuccessCount = function onSuccessCount(json) {
