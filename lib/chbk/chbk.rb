@@ -46,8 +46,7 @@ module Chbk
       
       @bminfo_array = []
       @categoryinfo_array = []
-      
-      
+
       @bookmarkinfo = Struct.new("BookmarkInfo", :category, :name, :url , :add_date)
       @categoryinfo = Struct.new("CategoryInfo", :name, :add_date, :last_modified)
 
@@ -88,7 +87,7 @@ module Chbk
             category, name, url, add_date, tmp_ignore = line.chomp.split("\t")
             if add_date != nil and add_date !~ /^\s*$/
               add_date = add_date.to_i
-              it = @bookmarkinfo.new( category, name, url, add_date )
+              it = @@bookmarkinfo.new( category, name, url, add_date )
               set_add_date_if_need( it.add_date ) if it.add_date != nil
               ary << it
             end
@@ -221,12 +220,18 @@ module Chbk
       bookmark_id = bookmark.id
     end
     
+    def add_bookmark_by_category_id( category_id , name , url , add_date = nil )
+      url_id = register_url( url )
+      bookmark = Bookmark.create( category_id: category_id, name: name, url_id: url_id, add_date: add_date )
+      bookmark_id = bookmark.id
+    end
+
     def register_url( val )
       url_id = nil
       current_url = Currenturl.find_by( val: val )
       if current_url
         url_id = current_url.org_id
-      else
+      else^
         begin
           url = Url.create( val: val )
           url_id = url.id
