@@ -22,7 +22,7 @@ SlickX.prototype.do_search = function do_search( category_id ) {
 //    redraw_viewport();
 }    
 
-SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , downbtn , acinput , list_count_url , list_url ) {
+SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , downbtn , acinput , items_count_url , items_url , add_item_url ) {
     var self = this;
     this.search_field  = search_field;
     this.sgrid = sgrid;
@@ -31,7 +31,7 @@ SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , d
     this.downbtn = downbtn;
     this.acinput = acinput;
 
-    var s;
+//    var s;
     this.text_field = search_field;
     this.score = score;
     this.page_num = 0;
@@ -39,26 +39,41 @@ SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , d
     this.columns = [
 	//        {id: "mpn", name: "name", field: "name", formatter: mpnFormatter, width: 100, sortable: true },
 	//        {id: "id", name: "id", field: "id", formatter: brandFormatter, width: 100, sortable: true },
-        {id: "name", name: "name"       , field: "name"             , width: 500 },
+        {id: "name", name: "name"       , field: "name"             , width: 300 , editor: Slick.Editors.Text },
         {id: "id"  , name: "id"         , field: "id"               , width:  80 },
-        {id: "desc", name: "Description", field: "short_description", width: 500 },
-        {id: "url", name: "Url", field: "url"                       , width: 500 },
+        {id: "desc", name: "Description", field: "short_description", width: 300 , editor: Slick.Editors.LongText},
+        {id: "url" , name: "Url"        , field: "url"              , width: 300 , editor: Slick.Editors.Text},
     ];
     this.options = {
         rowHeight: 21,
-        editable: false,
-        enableAddRow: false,
-        enableCellNavigation: false
+        editable: true,
+        enableAddRow: true,
+        enableCellNavigation: true,
+	asyncEditorLoading: false,
+	autoEdit: false,
+//	editCommandHandler: queueAndExecuteCommand
     };
     
     this.loadingIndicator = null;
 
     var loader = new Slick.Data.RemoteModel( );
-    this.loader = loader.initialize( list_count_url , list_url );
+    this.loader = loader.initialize( items_count_url , items_url , add_item_url );
 
     console.log( this.loader.data );
     
     this.grid = new Slick.Grid( this.sgrid , this.loader.data, this.columns, this.options );
+
+    this.grid.setSelectionModel(new Slick.CellSelectionModel());
+    this.grid.onAddNewRow.subscribe(function (e, args) {
+	var item = args.item;
+	if( item["name"] == null || item["desc"] == null || item["url"] == null ){
+	    return;
+	}
+	self.grid.invalidateRow(datax.length);
+	self.loader.addData( item["name"] , item["url"] , new Date() );
+	self.grid.updateRowCount();
+	self.grid.render();
+    });
 
     this.grid.onViewportChanged.subscribe(function (e, args) {
 	//	this.prototype.redraw_viewport();
@@ -93,7 +108,7 @@ SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , d
         self.loadingIndicator.fadeOut();
     });
     this.loader.onCountDataLoaded.subscribe(function (e, args) {
-	console.log( args.count );
+	console.log( "onCountDataLoaded=" + args.count );
         self.loader.ensureData( 0 , args.count);
     });
 
@@ -110,13 +125,13 @@ SlickX.prototype.init = function init( search_field  , sgrid , score , upbtn , d
     this.grid.onViewportChanged.notify();
 
     $( this.upbtn ).click( function() {
-	page_num = page_num + 1;
+	self.page_num = self.page_num + 1;
 	var category_id = $("#txtSearch").val( );
 	do_search( category_id );
     } );
     $( this.downbtn ).click( function() {
-	if( page_num > 0 ){
-	    page_num = page_num - 1;
+	if( self.page_num > 0 ){
+	    self.page_num = self.page_num - 1;
 	}
 	var category_id = $("#txtSearch").val( );
 	do_search( category_id );
@@ -283,7 +298,7 @@ Jst.prototype.init = function ( slickx , search_field , category_url ){
 
 $(document).ready(function(){
     var slickx = new SlickX();
-    slickx.init( "#txtSearch" , "#myGrid" , "score" , '#upbtn' , '#downbtn' , '#jquery-ui-autocomplete-input' , '/chbk/bookmarks_count' , '/chbk/bookmarks' );
+    slickx.init( "#txtSearch" , "#myGrid" , "score" , '#upbtn' , '#downbtn' , '#jquery-ui-autocomplete-input' , '/chbk/bookmarks_count' , '/chbk/bookmarks' , '/chbk/add_bookmark');
     // 'http://localhost:4567/chbk/repos'
 
     var jst = new Jst();
