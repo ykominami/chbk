@@ -40,4 +40,7 @@ exe/public/jstree
 exe/public/tmp
 exe/public/*.js
 exe/public/*.map
-
+exe/public/a.html
+exe/public/jquery.*.zip
+exe/public/jquery.*/
+exe/public/lib/
