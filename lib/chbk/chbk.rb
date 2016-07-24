@@ -231,7 +231,7 @@ module Chbk
       current_url = Currenturl.find_by( val: val )
       if current_url
         url_id = current_url.org_id
-      else^
+      else
         begin
           url = Url.create( val: val )
           url_id = url.id
