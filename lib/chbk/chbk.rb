@@ -213,17 +213,94 @@ module Chbk
       Management.find(1).last_modified
     end
 
-    def add_bookmark( category_name , name , url , add_date = nil )
-      category_id = register_category( category_name )
-      url_id = register_url( url )
-      bookmark = Bookmark.create( category_id: category_id, name: name, url_id: url_id, add_date: add_date )
-      bookmark_id = bookmark.id
+#    def register_bkattr( bookmark_id = nil , desc = nil , attr1 = nil, attr2 = nil, attr3 = nil )
+    def register_bkattr( args )
+      puts "register_bkattr"
+      bookmark_id = args[:bookmark_id]
+      desc = args[:desc]
+      attr1 = args[:attr1]
+      attr2 = args[:attr2]
+      attr3 = args[:attr3]
+
+      p bookmark_id
+      p desc
+
+      bkattr = nil
+      begin
+        bkattr = Bkattr.find_by( bookmark_id: bookmark_id )
+      rescue => ex
+        # do nothing
+      end
+      hs = { bookmark_id: bookmark_id , :desc => desc }
+      hs[:attr1] = attr1 if attr1
+      hs[:attr2] = attr2 if attr2
+      hs[:attr3] = attr3 if attr3
+
+      if bkattr
+        bkattr.update( hs )
+      else
+        p hs
+        bkattr = Bkattr.create( hs )
+      end
+      bkattr
     end
-    
-    def add_bookmark_by_category_id( category_id , name , url , add_date = nil )
+
+    def add_bookmark_with_bookmark_id( orginal_bookmark_id , category_name , name , desc, url , add_date = nil )
+      category_id = register_category( category_name )
+      add_bookmark_with_bookmark_id_by_category_id( orginal_bookmark_id , category_id , name , desc, url , add_date = nil )
+    end
+
+    def add_bookmark_with_bookmark_id_by_category_id( original_bookmark_id , category_id , name , desc, url , add_date = nil )
+      bkattr = nil
       url_id = register_url( url )
       bookmark = Bookmark.create( category_id: category_id, name: name, url_id: url_id, add_date: add_date )
       bookmark_id = bookmark.id
+      puts "bookmark_id=#{bookmark_id}"
+      puts "desc=#{desc}"
+      bkattr = register_bkattr( bookmark_id: bookmark.id , desc: desc ) if desc
+
+      JSON(
+        [ { "original_id" => original_bookmark_id , "id" => bookmark_id , "name" => bookmark.name , "desc" => bkattr ? bkattr.desc : nil , "url" => bookmark.url.val } ]
+      )
+    end
+
+    def add_bookmark( category_name , name , desc, url , add_date = nil )
+      category_id = register_category( category_name )
+      add_bookmark_by_category_id( category_id , name , desc, url , add_date = nil )
+    end
+
+    def add_bookmark_by_category_id( category_id , name , desc, url , add_date = nil )
+      url_id = register_url( url )
+      bookmark = Bookmark.create( category_id: category_id, name: name, url_id: url_id, add_date: add_date )
+      bookmark_id = bookmark.id
+      puts "bookmark_id=#{bookmark_id}"
+      puts "desc=#{desc}"
+      register_bkattr( bookmark_id: bookmark.id , desc: desc ) if desc
+
+      JSON(
+        [ { "id" => bookmark_id , "name" => bookmark.name , "desc" => bookmark.bkattr ? bookmark.bkattr.desc : nil , "url" => bookmark.url.val } ]
+      )
+    end
+
+    def update_bookmark_by_category_id( category_id , name , desc, url )
+      url_id = register_url( url )
+      bookmark = current_bookmark.bookmark.update( category_id: category_id, name: name, url_id: url_id )
+      register_bkattr( bookmark_id: bookmark.id , desc: desc ) if desc
+    end
+
+    def register_bookmark_with_bookmark_id( bookmark_id, category_name , name , desc, url , add_date = nil )
+      category_id = register_category( category_name )
+      register_bookmark_with_bookmark_id_by_category_id( bookmark_id, category_id , name , desc, url , add_date )
+    end
+
+    def register_bookmark_by_category_id( bookmark_id, category_id , name , desc, url , add_date )
+      current_bookmark = Currentbookmark.find( bookmark_id )
+      if current_bookmark
+        bookmark = update_bookmark_by_category_id( category_id , name , desc, url )
+      else
+        bookmark = add_bookmark_by_category_id( category_id , name , desc, url , add_date )
+      end
+      bookmark
     end
 
     def register_url( val )
@@ -241,7 +318,7 @@ module Chbk
           p ex.message
           pp ex.backtrace
           exit
-          
+
           current_url = nil
         end
       end
@@ -249,16 +326,13 @@ module Chbk
       if url_id
         @tsg.url.add( url_id )
       end
-      
+
       url_id
     end
-    
+
     def register_bookmark( category_name , name , url , add_date = nil )
-      bookmark_id = nil
       category_id = register_category( category_name )
-      url_id = nil
       url_id = register_url( url )
-      
       current_bookmark = Currentbookmark.find_by( category_id: category_id , url_id: url_id , add_date: add_date)
       if current_bookmark
         bookmark_id = current_bookmark.org_id
@@ -272,7 +346,7 @@ module Chbk
           p ex.message
           pp ex.backtrace
           exit
-          
+
           current_bookmark = nil
         end
       end
@@ -300,7 +374,7 @@ module Chbk
         @prev_latest_last_modified = @latest_last_modified 
       end
     end
-    
+
     def ensure_invalid
       invalid_ids = Currentbookmark.pluck(:org_id) - @tsg.bookmark.ids
       invalid_ids.map{|x|
@@ -333,14 +407,16 @@ module Chbk
       if category_id
         JSON(
           Currentbookmark.where( category_id: category_id ).all[ start , limit ].map{ |x|
-            { "id" => x.id , "name" => x.name , "url" => x.bookmark.url.val }
+            bkattr = x.bookmark.bkattr
+            desc = bkattr ? bkattr.desc : ""
+            { "id" => x.org_id , "name" => x.name , "desc" => desc , "url" => x.bookmark.url.val }
           }
         )
       else
         JSON([])
       end
     end
-    
+
     def get_bookmarks_count_json( hier )
       cur = @hierop.current_klass.find_by( name: hier )
       if cur
