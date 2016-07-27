@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>jsTree test</title>
+    <link rel="stylesheet" type="text/css" href="/lib/jstree/dist/themes/default/style.min.css" />
+    <script src="/lib/jquery-1.12.4.js"></script> 
+    <script type="text/javascript" src="/lib/jstree/dist/jstree.js"></script>
+
+    <link rel="stylesheet" href="/lib/SlickGrid/slick.grid.css" type="text/css"/>
+    <link rel="stylesheet" href="/lib/SlickGrid/css/smoothness/jquery-ui-1.11.3.custom.css" type="text/css"/>
+    <script src="/lib/SlickGrid/lib/firebugx.js"></script>
+    <script src="/lib/jquery-ui-1.12.0/jquery-ui-1.12.0/jquery-ui.js"></script>
+    <script src="/lib/SlickGrid/lib/jquery.event.drag-2.2.js"></script> 
+    <script src="/lib/SlickGrid/lib/jquery.event.drop-2.2.js"></script> 
+    <script src="/lib/SlickGrid/lib/jquery.jsonp-2.4.min.js"></script>
+
+    <script src="/lib/SlickGrid/slick.core.js"></script>
+    <script src="/lib/SlickGrid/plugins/slick.cellrangedecorator.js"></script>
+    <script src="/lib/SlickGrid/plugins/slick.cellrangeselector.js"></script>
+    <script src="/lib/SlickGrid/plugins/slick.rowselectionmodel.js"></script>    
+    <script src="/lib/SlickGrid/plugins/slick.rowmovemanager.js"></script>    
+    <script src="/lib/SlickGrid/slick.formatters.js"></script>
+    <script src="/lib/SlickGrid/slick.editors.js"></script>
+    <script src="/lib/SlickGrid/slick.dataview.js"></script>
+    <script src="/lib/slick.remotemodel-base-b.js"></script>
+    <script src="/chbk/slick.remotemodel-chbk-b.js"></script>
+    <script src="/lib/SlickGrid/slick.grid.js"></script> 
+    <script src="/chbk/jstb.js"></script> 
+    
+    <style>
+      #wrap{
+        float: left;
+        width: 100%;
+        margin-right: -983px;
+        height: 821px;
+        font-size: 8pt;
+      }
+      
+      #content{
+        margin-right: 983px;
+        height: 821px;
+        overflow: auto;
+        font-size: 8pt;
+      }
+      
+      #sub{
+        float: left;
+        width: 980px;
+        border-left: solid 3px #7b3b3b;
+       height: 821px;
+        font-size: 8pt;
+      }
+      
+  
+      .slick-row {
+        line-height:16px;
+        font-size: 8pt;
+      }
+        .loading-indicator {
+            display: inline-block;
+            padding: 12px;
+            background: white;
+            -opacity: 0.5;
+            color: black;
+            font-weight: bold;
+            z-index: 9999;
+            border: 1px solid red;
+            -moz-border-radius: 10px;
+            -webkit-border-radius: 10px;
+            -moz-box-shadow: 0 0 5px red;
+            -webkit-box-shadow: 0px 0px 5px red;
+            -text-shadow: 1px 1px 1px white;
+        }
+        .loading-indicator label {
+            padding-left: 20px;
+            background: url('/lib/SlickGrid/images/ajax-loader-small.gif') no-repeat center left;
+      }
+      .jquery-ui-autocomplete-input a  {
+        font-size: 8pt;
+      }
+      .jquery-ui-autocomplete-input a {
+        font-size: 8pt;
+      }
+  
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <span style="display:block;">
+        <input type="text" id="category-search" value="">
+      </span>
+      
+      <div id="content">
+	<div id="jstree"></div>
+      </div>
+    </div>
+
+    <div id="sub">
+      <div class="grid-header" style="width:100%">
+        <span style="float:left;display:inline-block;">
+          <input type="text" id="jquery-ui-autocomplete-input" value="">
+        </span>
+        <button id="upbtn">Up</button><button id="downbtn">Down</button>
+
+        <span style="float:right;display:inline-block;">
+          <input type="text" id="txtSearch" value="">
+        </span>
+      </div>
+      <div id="myGrid" style="width:100%;height:800px;"></div>
+    </div>
+
+  </body>
+</html>

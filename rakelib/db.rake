@@ -32,6 +32,7 @@ task :migrate do
       :relation => [
         %Q!belongs_to :category , foreign_key: 'category_id'!,
         %Q!belongs_to :url , foreign_key: 'url_id'!,
+        %Q!belongs_to :bkattr , foreign_key: 'category_id'!,
       ]
     },
 
@@ -91,6 +92,20 @@ task :migrate do
         ["last_modified" , "int", "false"],
       ],
       :plural => "managements",
+    },
+
+    {
+      :flist => %W!noitem!,
+      :classname => "Bkattr",
+      :classname_downcase => "bkattr",
+
+      :items => [
+        ["desc" , "string", "false"],
+        ["attr1" , "int", "false"],
+        ["attr2" , "int", "false"],
+        ["attr3" , "int", "false"],
+      ],
+      :plural => "bkattrs",
     },
   ]
 
