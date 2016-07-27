@@ -31,8 +31,8 @@ exe/chbk-server
 exe/public/chbk/SlickGrid
 exe/public/chbk/autocomplete
 exe/public/chbk/jstree
-#exe/public/chbk/*.js
-#exe/public/chbk/*.html
+exe/public/chbk/*.js
+exe/public/chbk/*.html
 exe/public/chbk/*.map
 exe/public/SlickGrid
 exe/public/autocomplete
