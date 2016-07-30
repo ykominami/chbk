@@ -134,7 +134,14 @@ class SlickX {
 		self.dataView.deleteItem( self.selectedRow );
 		self.loader.deleteData( self.data.id );
 	    }
-	}
+	    else if ( e.target.id == "Open" ){
+		console.log( self.selectedRow );
+		self.data = self.dataView.getItem( self.selected_cell_row );
+		var childWindow = window.open('about:blank');
+		childWindow.location.href = self.data.url;
+		childWindow = null;
+	    }
+	});
 	
 	self.loader.onDataLoading.subscribe(function () {
 	    console.log("onDataLoading");
