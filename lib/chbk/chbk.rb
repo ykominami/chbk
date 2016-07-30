@@ -358,6 +358,21 @@ module Chbk
       bookmark_id
     end
 
+    def delete_bookmark( id , count_id = nil )
+      if count_id
+        Invalidbookmark.create( org_id: id , count_id: count_id )
+      else
+        register_time = DateTime.now.new_offset
+
+        count = Count.create( countdatetime: register_time )
+
+        Invalidbookmark.create( org_id: id , count_id: count.id )
+      end
+      JSON(
+        [ { "id" => id } ]
+      )
+    end
+
     #
     # interface      
     def get_latest_bookmark
