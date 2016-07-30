@@ -1,21 +1,85 @@
 (function ($) {
     class RemoteModel extends Slick.Data.RemoteModelBase {
-	//	Slick.Data.RemoteModelBase.call(this)
-	constructor(items_count_url , items_url , add_item_url){
-	    super(items_count_url , items_url , add_item_url);
+//    class RemoteModel extends RemoteModelBase {
+	constructor(items_count_url , items_url , add_item_url , delete_item_url ){
+	    super( items_count_url , items_url , add_item_url , delete_item_url );
 	    this.data_count = [];
 	    this.data_addbookmark = [];
+	    this.data_deletebookmark = [];
 	    this.onAddBookmarkDataLoading = new Slick.Event();
 	    this.onAddBookmarkDataLoaded = new Slick.Event();
+	    this.onDeleteBookmarkDataLoading = new Slick.Event();
+	    this.onDeleteBookmarkDataLoaded = new Slick.Event();
 	}
-	
+
+	deleteData( id ) {
+	    var self = this;
+
+	    console.log("deleteData");
+	    if (self.req) {
+		self.req.abort();
+		self.data = undefined;
+	    }
+
+	    var send_data = {
+		id: id
+	    }
+	    if (self.h_request != null) {
+		clearTimeout(self.h_request);
+	    }
+
+	    self.h_request = setTimeout(function () {
+		//	    self.data = {length: 0};
+		if( ( "data" in self ) === false ){
+		    self.data = [];
+		}
+		else if( self.data === undefined ) {
+		    self.data = [];
+		}
+		self.data[0] = null; // null indicates a 'requested but not available yet'
+
+		self.req = $.ajax({
+		    data: send_data,
+		    //		type: "POST",
+		    type: "GET",
+		    url: self.delete_item_url,
+		    cache: true,
+		    success: function (data) {
+			// this;
+			self.onDeleteBookmarkSuccess(data)
+		    },
+		    error: function (XMLHttpRequest, textStatus, errorThrown) {
+			self.onDeleteBookmarkError()
+		    }
+		});
+	    }, 50);
+	}
+
+	onDeleteBookmarkSuccess (json) {
+	    console.log("onDeleteBookmarkSuccess");
+	    console.log("json.length=" + json.length );
+	    if (json.length > 0) {
+		//	if (json.count > 0) {
+		var results = json
+		var item = results[0];
+		this.data[0] = { index: 0 };
+		this.data[0].id = item.id
+	    }
+	    this.req = null;
+	    this.onDeleteBookmarkDataLoaded.notify( this.data[0] );
+	}
+
+	onDeleteBookmarkError() {
+	    alert("Chbk:error onDeleteBookmarkError");
+	}
+
 	addData( id , name , desc , url , add_date ) {
 	    console.log("addData");
 
 	    if (this.category_id == null && this.path == null) {
 		return;
 	    }
-	    
+
 	    if (this.req) {
 		this.req.abort();
 		this.data_addbookmark = undefined;
@@ -132,8 +196,15 @@
 	  }
 	*/    
     }
-    $.extend(
-	true, window, { Slick: { Data: { RemoteModel: RemoteModel }}	 }
-    );
+
+    // Slick.Data.RemoteModel
+    $.extend(true, window, {
+	Slick: {
+	    Data: {
+		RemoteModel: RemoteModel
+	    }
+	}
+    });
+
 })(jQuery);
     

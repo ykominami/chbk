@@ -1,8 +1,10 @@
 "use strict";
 
 class SlickX {
-    constructor( search_field  , sgrid , score , upbtn , downbtn , acinput , items_count_url , items_url , add_item_url ) {
+    constructor( search_field  , sgrid , score , upbtn , downbtn , acinput , items_count_url , items_url , add_item_url , delete_item_url ) {
 	var self = this;
+	self.selected_cell_row = null;
+	self.selectedRow = null;
 	self.search_field  = search_field;
 	self.sgrid = sgrid;
 	self.score = score;
@@ -37,7 +39,7 @@ class SlickX {
 	
 	self.dataView = new Slick.Data.DataView();
 	
-	self.loader = new Slick.Data.RemoteModel( items_count_url , items_url , add_item_url );
+	self.loader = new Slick.Data.RemoteModel( items_count_url , items_url , add_item_url , delete_item_url );
 	
 	console.log( self.loader.data );
 	
@@ -52,15 +54,15 @@ class SlickX {
 	    self.grid.invalidateRows(args.rows);
 	    self.grid.render();
 	});
-	//    self.grid = new Slick.Grid( self.sgrid , self.loader.data, self.columns, self.options );
 
 	self.grid = new Slick.Grid( self.sgrid , self.dataView, self.columns, self.options );
-	
+
 	self.grid.setSelectionModel(new Slick.CellSelectionModel());
-//	self.grid.setSelectionModel(new Slick.RowSelectionModel());
-	self.grid.onAddNewRow.subscribe(function (e, args) {
-	    console.log("onAddNewRow");
-	    var item = args.item;
+
+	function updateRow( item ) {
+	    var name = item["name"];
+	    var desc = item["desc"];
+	    var url = item["url"];
 	    console.log("id=" + item["id"]);
 	    console.log("name=" + item["name"]);
 	    console.log("desc=" + item["desc"]);
@@ -68,15 +70,12 @@ class SlickX {
 	    
 	    console.log("onAddNewRow 2");
 	    self.grid.invalidateRow(self.loader.data.length);
-	    var name = item["name"];
 	    if( name == null ){
 		name = "";
 	    }
-	    var desc = item["desc"];
 	    if( desc == null ){
 		desc = "";
 	    }
-	    var url = item["url"];
 	    if( url == null ){
 		url = "";
 	    }
@@ -90,19 +89,52 @@ class SlickX {
 		self.grid.render();
 		self.loader.addData( item["id"] , name , desc , url , Math.trunc( Date.now() / 1000 ) );
 	    }
+	}
+
+	self.grid.onAddNewRow.subscribe(function (e, args) {
+	    console.log("onAddNewRow");
+	    updateRow( args.item );
 	});
-	
-	//    self.grid.onViewportChanged.subscribe(function (e, args) {
-	//	//	self.prototype.redraw_viewport();
-	//	console.log( self.redraw_viewport() );
-	//	self.redraw_viewport();
-	// //	redraw_viewport();
-	//    });
-	//    self.grid.onSort.subscribe( function (e, args) {
-	//        self.loader.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
-	//	self.redraw_viewport();
-	//	redraw_viewport();
-	//    });
+	self.grid.onCellChange.subscribe(function (e, args) {
+	    console.log("onCellChange");
+	});
+	self.grid.onSelectedRowsChanged.subscribe(function (e) {
+	    console.log("onSelectedRowsChanged");
+	});
+	self.grid.onContextMenu.subscribe(function (e) {
+	    console.log("onContextMenu");
+	    console.log(e.pageY);
+	    console.log(e.pageX);
+	    e.preventDefault();
+	    var selected_cell = self.grid.getCellFromEvent(e);
+	    self.selected_cell_row = selected_cell.row;
+	    //	    var selectedRowIds = self.dataView.mapRowsToIds(self.grid.getSelectedRows());
+	    var selectedRowIds = self.dataView.mapRowsToIds( [selected_cell.row] );
+	    self.selectedRow = selectedRowIds[0];
+	    $("#contextMenu")
+		.css("top"  , e.pageY)
+		.css("left" , e.pageX)
+		.show();
+	    $("body").one("click", function() {
+		$("#contextMenu").hide();
+	    });
+	});
+
+	$("#contextMenu").click(function(e) {
+	    if (!$(e.target).is("li")){
+		return;
+	    }
+	    if (!self.grid.getEditorLock().commitCurrentEdit()) {
+		return;
+	    }
+	    console.log( e.target.id );
+	    if( e.target.id == "Delete" ){
+		console.log( self.selectedRow );
+		self.data = self.dataView.getItem( self.selected_cell_row );
+		self.dataView.deleteItem( self.selectedRow );
+		self.loader.deleteData( self.data.id );
+	    }
+	}
 	
 	self.loader.onDataLoading.subscribe(function () {
 	    console.log("onDataLoading");
@@ -111,12 +143,12 @@ class SlickX {
 		var $g = $( sgrid );
 		self.loadingIndicator
                     .css("position", "absolute")
-                    .css("top", $g.position().top + $g.height() / 2 - self.loadingIndicator.height() / 2)
+                    .css("top",  $g.position().top + $g.height() / 2 - self.loadingIndicator.height() / 2)
                     .css("left", $g.position().left + $g.width() / 2 - self.loadingIndicator.width() / 2);
             }
             self.loadingIndicator.show();
 	});
-	
+
 	self.loader.onDataLoaded.subscribe(function (e, args) {
 	    console.log("onDataLoaded");
 	    self.dataView.setItems(self.loader.data);
@@ -150,6 +182,10 @@ class SlickX {
 		    console.log( "onAddBookmarkDataLoaded 22 =" + args.original_id );
 		}
 	    }
+	});
+
+	self.loader.onDeleteBookmarkDataLoaded.subscribe(function (e, args) {
+	    console.log( "onDeleteBookmarkDataLoaded=" + args.id );
 	});
 	
 	$( self.text_field ).keyup(function (e) {
@@ -355,7 +391,7 @@ class Jst {
 }
 
 $(document).ready(function(){
-    var slickx = new SlickX( "#txtSearch" , "#myGrid" , "score" , '#upbtn' , '#downbtn' , '#jquery-ui-autocomplete-input' , '/chbk/bookmarks_count' , '/chbk/bookmarks' , '/chbk/add_bookmark');
+    var slickx = new SlickX( "#txtSearch" , "#myGrid" , "score" , '#upbtn' , '#downbtn' , '#jquery-ui-autocomplete-input' , '/chbk/bookmarks_count' , '/chbk/bookmarks' , '/chbk/add_bookmark', '/chbk/delete_bookmark');
     // 'http://localhost:4567/chbk/repos'
 
     var jst = new Jst( slickx , '#category-search' , '/chbk/categories.json' );

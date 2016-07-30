@@ -18,7 +18,8 @@
     <script src="/lib/SlickGrid/slick.core.js"></script>
     <script src="/lib/SlickGrid/plugins/slick.cellrangedecorator.js"></script>
     <script src="/lib/SlickGrid/plugins/slick.cellrangeselector.js"></script>
-    <script src="/lib/SlickGrid/plugins/slick.rowselectionmodel.js"></script>    
+<!--    <script src="/lib/SlickGrid/plugins/slick.rowselectionmodel.js"></script>    -->
+    <script src="/lib/SlickGrid/plugins/slick.cellselectionmodel.js"></script>    
     <script src="/lib/SlickGrid/plugins/slick.rowmovemanager.js"></script>    
     <script src="/lib/SlickGrid/slick.formatters.js"></script>
     <script src="/lib/SlickGrid/slick.editors.js"></script>
@@ -83,6 +84,25 @@
         font-size: 8pt;
       }
   
+    #contextMenu {
+      background: #e1efc7;
+      border: 1px solid gray;
+      padding: 2px;
+      display: inline-block;
+      min-width: 100px;
+      -moz-box-shadow: 2px 2px 2px silver;
+      -webkit-box-shadow: 2px 2px 2px silver;
+      z-index: 99999;
+    }
+    #contextMenu li {
+      padding: 4px 4px 4px 14px;
+      list-style: none;
+      cursor: pointer;
+      background: url("/lib/images/arrow_right_peppermint.png") no-repeat center left;
+    }
+    #contextMenu li:hover {
+      background-color: white;
+    }
     </style>
   </head>
   <body>
@@ -109,6 +129,10 @@
       </div>
       <div id="myGrid" style="width:100%;height:800px;"></div>
     </div>
-
+    <ul id="contextMenu" style="display:none;position:absolute">
+      <li id="Delete">Delete</li>
+      <li id="Update">Update</li>
+      <li id="Add">Add</li>
+    </ul>
   </body>
 </html>
