@@ -31,7 +31,7 @@ module Chbk
       end
     end
 
-    def initialize( kind , hs )
+    def initialize( kind , hs , opts )
       # HierOpはArxutilsで定義されている階層構造表すテーブルに対する操作を行うクラス
       @hierop = HierOp.new( "category_id" , :name , "category" , Category , Categoryhier, Currentcategory , Invalidcategory )
 
@@ -50,7 +50,7 @@ module Chbk
       @bookmarkinfo = Struct.new("BookmarkInfo", :category, :name, :url , :add_date)
       @categoryinfo = Struct.new("CategoryInfo", :name, :add_date, :last_modified)
 
-      Store.init( kind , hs ){ | register_time |
+      Store.init( kind , hs , opts ){ | register_time |
         @count = Count.create( countdatetime: register_time )
       }
 

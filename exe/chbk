@@ -3,19 +3,40 @@
 
 require 'arxutils'
 require "chbk"
+require 'simpleoptparse'
+
+env = ENV['ENV']
+#env ||= "development"
+env ||= "production"
+
+opts = { db_dir: Arxutils::Dbutil::DB_DIR }
+banner = "Usage: bundle exec ruby exe/chbk [--mysql|--sqlite3]"
+
+# wop = Simpleoptparse::Simpleoptparse.create( ARGV , opts , banner , Arxutils::
+#p Simpleoptparse::Simpleoptparse.class
+Simpleoptparse::Simpleoptparse.parse( ARGV , opts , banner , Chbk::VERSION , nil ){ |parser|
+    parser.on('--mysql'  ) { |x| opts["dbconfig"] = Arxutils::Dbutil::DBCONFIG_MYSQL }
+    parser.on('--sqlite3'  ) { |x| opts["dbconfig"] = Arxutils::Dbutil::DBCONFIG_SQLITE3 }
+}
+
+opts["dbconfig"] = Arxutils::Dbutil::DBCONFIG_SQLITE3 unless opts["dbconfig"]
 
 start_time = Time.now
 
+=begin
 dbname = 'chbk'
 db_dir = File.join( Arxutils::Dbutil::DB_DIR , dbname )
 config_dir = File.join( Arxutils::Dbutil::CONFIG_DIR , dbname )
 dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_MYSQL , :dbname => dbname , :db_dir => db_dir , :config_dir => config_dir}
 dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_SQLITE3 , :db_dir => db_dir , :config_dir => config_dir}
+=end
 
 hs = {
+  "db_dir" => Arxutils::Dbutil::DB_DIR,
   "migrate_dir" => Arxutils::Dbutil::MIGRATE_DIR,
-  "config_dir" => config_dir,
-  "dbconfig" => dbconfig,
+  "config_dir" => Arxutils::Dbutil::CONFIG_DIR,
+  "dbconfig" => opts["dbconfig"],
+  "env" => env,
   "log_fname" => Arxutils::Dbutil::DATABASELOG,
 }
 
@@ -25,9 +46,12 @@ basename = pn.basename(".*")
 dirname = pn.dirname
 ext = pn.extname
 category_pn =  dirname + Pathname.new( basename.to_s + "_category" + ext.to_s )
+p hs
+p opts
 chbk = Chbk::Chbk.new(
                       :db,
                       hs,
+                      opts,
                       )
 #chbk.connect
 
@@ -43,20 +67,25 @@ def category_op(chbk, category_pn)
 #chbk.list_category
 #  category = chbk.get_latest_category
 #puts category.add_date
-#  p category
+  #  p category
+  # カテゴリ一覧を取得
   chbk.list_category
 #  puts chbk.max_add_date
 end
 
 def bookmark_op(chbk, pn)
 #  chbk.pickup_multiple_bookmarks_by_add_date
-#  chbk.pickup_multiple_bookmarks_by_url
+  #  chbk.pickup_multiple_bookmarks_by_url
+  # 最新のブックマークを得る
   bminfo = chbk.get_latest_bookmark
+  # ブックマークの一覧を得る
   chbk.list_bookmark
 end
 
 init(chbk, category_pn , pn )
+# bookmark_opをDBを更新するまえの状態で行う
 bookmark_op(chbk, pn)
+# category_opをDBを更新するまえの状態で行う
 category_op(chbk, category_pn)
 #chbk.pickup_multiple_bookmarks_between_gitmarks_and_other
 =begin

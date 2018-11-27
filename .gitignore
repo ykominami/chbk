@@ -45,3 +45,13 @@ exe/public/jquery.*.zip
 exe/public/jquery.*/
 exe/public/lib/
 exe/chbk3db
+exe/public/bmx/
+exe/public/bmx2/
+exe/public/bmx3/
+exe/public/bmx4/
+exe/public/bmx5/
+exe/public/bmx6/
+exe/public/bmx8/
+exe/public/bmx/
+exe/public/bmx/
+*.stackdump

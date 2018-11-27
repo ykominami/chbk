@@ -3,35 +3,35 @@
 
 require 'arxutils'
 require "chbk/chbk"
+require 'simpleoptparse'
+
+env = ENV['ENV']
+#env ||= "development"
+env ||= "production"
+
+opts = { db_dir: Arxutils::Dbutil::DB_DIR }
+banner = "Usage: bundle exec ruby exe/chbk [--mysql|--sqlite3]"
+
+# wop = Simpleoptparse::Simpleoptparse.create( ARGV , opts , banner , Arxutils::
+#p Simpleoptparse::Simpleoptparse.class
+Simpleoptparse::Simpleoptparse.parse( ARGV , opts , banner , Chbk::VERSION , nil ){ |parser|
+    parser.on('--mysql'  ) { |x| opts["dbconfig"] = Arxutils::Dbutil::DBCONFIG_MYSQL }
+    parser.on('--sqlite3'  ) { |x| opts["dbconfig"] = Arxutils::Dbutil::DBCONFIG_SQLITE3 }
+}
+
+opts["dbconfig"] = Arxutils::Dbutil::DBCONFIG_SQLITE3 unless opts["dbconfig"]
 
 start_time = Time.now
 
-dbname = 'chbk'
-db_dir = File.join( Arxutils::Dbutil::DB_DIR , dbname )
-config_dir = File.join( Arxutils::Dbutil::CONFIG_DIR , dbname )
-dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_MYSQL , :dbname => dbname , :db_dir => db_dir , :config_dir => config_dir}
-dbconfig = { :kind => Arxutils::Dbutil::DBCONFIG_SQLITE3 , :db_dir => db_dir , :config_dir => config_dir}
-
 hs = {
+  "db_dir" => Arxutils::Dbutil::DB_DIR,
   "migrate_dir" => Arxutils::Dbutil::MIGRATE_DIR,
-  "config_dir" => config_dir,
-  "dbconfig" => dbconfig,
+  "config_dir" => Arxutils::Dbutil::CONFIG_DIR,
+  "dbconfig" => opts["dbconfig"],
+  "env" => env,
   "log_fname" => Arxutils::Dbutil::DATABASELOG,
 }
 
-def print_diff( end_time , start_time )
-  diff_time = end_time - start_time
-  
-  puts diff_time
-  sec = (diff_time % 60.0).to_i
-  total_min = (diff_time / 60.0).to_i
-  min = total_min % 60
-  total_hour = total_min / 60
-  hour = total_hour % 24
-  total_day = total_hour / 24
-  puts %Q!#{total_day} Days #{hour} Hours #{min} minutes #{sec} seconds!
-end
-################################################
 mode = :TRACE_MODE
 
 time_hs = {}
@@ -41,7 +41,7 @@ time_hs[:START] = Time.now
 
 infname = ARGV[0]
 
-mode = ARGV[1].to_sym if ARGV.size > 0
+mode = ARGV[1].to_sym if ARGV.size > 1
 puts "mode=#{mode}"
 
 pn = Pathname.new( infname )
@@ -52,6 +52,7 @@ category_pn =  dirname + Pathname.new( basename.to_s + "_category" + ext.to_s )
 chbk = Chbk::Chbk.new(
                       :db,
                       hs,
+                      opts,
                       )
 chbk.set_mode( mode )
 
@@ -72,6 +73,18 @@ def bookmark_op(chbk, pn)
   chbk.list_bookmark
 end
 
+def print_diff( end_time , start_time )
+  diff_time = end_time - start_time
+  
+  puts diff_time
+  sec = (diff_time % 60.0).to_i
+  total_min = (diff_time / 60.0).to_i
+  min = total_min % 60
+  total_hour = total_min / 60
+  hour = total_hour % 24
+  total_day = total_hour / 24
+  puts %Q!#{total_day} Days #{hour} Hours #{min} minutes #{sec} seconds!
+end
 
 init(chbk, category_pn , pn )
 time_hs[:CATEGORY_OP] = Time.now
@@ -109,3 +122,6 @@ puts "###"
 puts ":ENSURE_INVALID -> :END"
 print_diff( time_hs[:END] , time_hs[:ENSURE_INVALID] )
 puts "###"
+
+
+################################################
